@@ -1,0 +1,5 @@
+[versions]
+open-feature-kotlin-sdk = "0.4.1"
+
+[libraries]
+open-feature-kotlin-sdk = { group="dev.openfeature", name="kotlin-sdk", version.ref="open-feature-kotlin-sdk" }
