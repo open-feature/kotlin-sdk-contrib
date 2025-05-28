@@ -1,5 +1,10 @@
 [versions]
+kotlin = "2.1.21"
 open-feature-kotlin-sdk = "0.4.1"
 
 [libraries]
-open-feature-kotlin-sdk = { group="dev.openfeature", name="kotlin-sdk", version.ref="open-feature-kotlin-sdk" }
+openfeature-kotlin-sdk = { group="dev.openfeature", name="kotlin-sdk", version.ref="open-feature-kotlin-sdk" }
+kotlin-test = { group="org.jetbrains.kotlin", name="kotlin-test", version.ref="kotlin" }
+
+[plugins]
+kotlin-multiplatform = { id="org.jetbrains.kotlin.multiplatform", version.ref="kotlin" }
