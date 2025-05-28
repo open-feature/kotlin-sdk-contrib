@@ -8,3 +8,6 @@ kotlin-test = { group="org.jetbrains.kotlin", name="kotlin-test", version.ref="k
 
 [plugins]
 kotlin-multiplatform = { id="org.jetbrains.kotlin.multiplatform", version.ref="kotlin" }
+ktlint = { id="org.jlleitschuh.gradle.ktlint", version="12.3.0" }
+nexus-publish = { id="io.github.gradle-nexus.publish-plugin", version="2.0.0" }
+binary-compatibility-validator = { id="org.jetbrains.kotlinx.binary-compatibility-validator", version="0.17.0" }
