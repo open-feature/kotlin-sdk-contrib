@@ -23,7 +23,7 @@ internal class EnvVarProviderTest {
     }
 
     @Test
-    fun `should evaluate bool_true value correctly`() =
+    fun `should evaluate true as Boolean correctly`() =
         evaluationTest(
             "bool_true",
             "true",
@@ -44,7 +44,7 @@ internal class EnvVarProviderTest {
         )
 
     @Test
-    fun `should evaluate bool_false value correctly`() =
+    fun `should evaluate false as Boolean correctly`() =
         evaluationTest(
             "bool_false",
             "FaLsE",
@@ -65,7 +65,7 @@ internal class EnvVarProviderTest {
         )
 
     @Test
-    fun `should evaluate unusual bool_false value correctly`() =
+    fun `should evaluate unrecognized Boolean as Boolean false correctly`() =
         evaluationTest(
             "bool_false",
             "not-a-bool",
@@ -86,7 +86,7 @@ internal class EnvVarProviderTest {
         )
 
     @Test
-    fun `should evaluate string value correctly`() =
+    fun `should evaluate String value correctly`() =
         evaluationTest(
             "string",
             "value",
@@ -107,7 +107,7 @@ internal class EnvVarProviderTest {
         )
 
     @Test
-    fun `should evaluate int value correctly`() =
+    fun `should evaluate Int value correctly`() =
         evaluationTest(
             "INT",
             "42",
@@ -128,7 +128,7 @@ internal class EnvVarProviderTest {
         )
 
     @Test
-    fun `should evaluate double value correctly`() =
+    fun `should evaluate Double value correctly`() =
         evaluationTest(
             "double",
             "42.0",
@@ -149,7 +149,7 @@ internal class EnvVarProviderTest {
         )
 
     @Test
-    fun `should throw FlagNotFound on missing env bool_default`() =
+    fun `should throw FlagNotFound on missing Boolean env`() =
         throwingEvaluationTest<OpenFeatureError.FlagNotFoundError, Boolean>(
             "other",
             "other",
@@ -162,7 +162,7 @@ internal class EnvVarProviderTest {
         }
 
     @Test
-    fun `should throw FlagNotFound on missing env string_default`() =
+    fun `should throw FlagNotFound on missing String env`() =
         throwingEvaluationTest<OpenFeatureError.FlagNotFoundError, String>(
             "other",
             "other",
@@ -175,7 +175,7 @@ internal class EnvVarProviderTest {
         }
 
     @Test
-    fun `should throw FlagNotFound on missing env int_default`() =
+    fun `should throw FlagNotFound on missing Int env`() =
         throwingEvaluationTest<OpenFeatureError.FlagNotFoundError, Int>(
             "other",
             "other",
@@ -188,7 +188,7 @@ internal class EnvVarProviderTest {
         }
 
     @Test
-    fun `should throw FlagNotFound on missing env double_default`() =
+    fun `should throw FlagNotFound on missing Double env`() =
         throwingEvaluationTest<OpenFeatureError.FlagNotFoundError, Double>(
             "other",
             "other",
@@ -196,19 +196,6 @@ internal class EnvVarProviderTest {
             getDoubleEvaluation(
                 "double_default",
                 42.0,
-                null,
-            )
-        }
-
-    @Test
-    fun `should throw FlagNotFound on missing env null_default`() =
-        throwingEvaluationTest<OpenFeatureError.FlagNotFoundError, String>(
-            "other",
-            "other",
-        ) {
-            getStringEvaluation(
-                "null_default",
-                "default",
                 null,
             )
         }
@@ -227,7 +214,7 @@ internal class EnvVarProviderTest {
         }
 
     @Test
-    fun `should throw FlagNotFound on missing env double_incorrect`() =
+    fun `should throw FlagNotFound on missing double_incorrect env`() =
         throwingEvaluationTest<OpenFeatureError.ParseError, Double>(
             "double_incorrect",
             "fourty-two",
