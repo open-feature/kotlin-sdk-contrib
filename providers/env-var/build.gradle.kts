@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -29,4 +31,17 @@ kotlin {
             implementation(libs.kotlin.test)
         }
     }
+}
+
+// Set test environment variable for tests
+// Used in ./commonTest/kotlin/dev/openfeature/kotlin/contrib/providers/envvar/PlatformSpecificEnvironmentGatewayTest.kt
+val testEnvironmentVariable = "TEST_ENVIRONMENT_VARIABLE" to "foo"
+tasks.withType(Test::class).configureEach {
+    environment(testEnvironmentVariable)
+}
+tasks.withType(KotlinJsTest::class).configureEach {
+    environment(testEnvironmentVariable.first, testEnvironmentVariable.second)
+}
+tasks.withType(KotlinNativeTest::class).configureEach {
+    environment(testEnvironmentVariable.first, testEnvironmentVariable.second)
 }
