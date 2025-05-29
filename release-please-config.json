@@ -9,9 +9,9 @@
             "extra-files": [
                 "README.md",
                 "build.gradle.kts",
-                "android/build.gradle.kts"
-            ],
-            "exclude-paths": ["sampleapp"]
+                "providers/*/README.md",
+                "hooks/*/README.md"
+            ]
         }
     },
     "changelog-sections": [
