@@ -4,7 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-// Defined in build.gradle
+// The TEST_ENVIRONMENT_VARIABLE environment variable is defined in `build.gradle.kts`
 private const val EXISTING_ENVIRONMENT_VARIABLE_NAME = "TEST_ENVIRONMENT_VARIABLE"
 private const val EXISTING_ENVIRONMENT_VARIABLE_VALUE = "foo"
 private const val NON_EXISTING_ENVIRONMENT_VARIABLE_NAME = "NON_EXISTING_ENVIRONMENT_VARIABLE"
