@@ -2,6 +2,19 @@
 
 Environment Variables provider allows you to read feature flags from the [process's environment](https://en.wikipedia.org/wiki/Environment_variable).
 
+## Supported platforms
+
+| Supported | Platform             | Supported versions                                                             |
+|-----------|----------------------|--------------------------------------------------------------------------------|
+| ❌         | Android              |                                                                                |
+| ✅         | JVM                  | JDK 11+                                                                        |
+| ✅         | Native               | Linux x64                                                                      |
+| ❌         | Native               | [Other native targets](https://kotlinlang.org/docs/native-target-support.html) |
+| ✅         | Javascript (Node.js) |                                                                                |
+| ❌         | Javascript (Browser) |                                                                                |
+| ❌         | Wasm                 |                                                                                |
+
+
 ## Installation
 
 ```xml
