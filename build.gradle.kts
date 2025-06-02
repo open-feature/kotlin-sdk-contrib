@@ -4,9 +4,7 @@ plugins {
 
 allprojects {
     extra["groupId"] = "dev.openfeature.kotlin.contrib"
-// x-release-please-start-version
     ext["version"] = "0.1.0"
-// x-release-please-end
 }
 group = project.extra["groupId"].toString()
 version = project.extra["version"].toString()

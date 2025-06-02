@@ -4,8 +4,6 @@ Environment Variables provider allows you to read feature flags from the [proces
 
 ## Installation
 
-<!-- x-release-please-start-version -->
-
 ```xml
 <dependency>
     <groupId>dev.openfeature.kotlin.contrib.providers</groupId>
@@ -13,8 +11,6 @@ Environment Variables provider allows you to read feature flags from the [proces
     <version>0.1.0</version>
 </dependency>
 ```
-
-<!-- x-release-please-end-version -->
 
 ## Usage
 
