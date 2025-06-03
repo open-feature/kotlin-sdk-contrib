@@ -1,0 +1,50 @@
+public final class dev/openfeature/kotlin/contrib/providers/envvar/EnvVarProvider : dev/openfeature/sdk/FeatureProvider {
+	public static final field Companion Ldev/openfeature/kotlin/contrib/providers/envvar/EnvVarProvider$Companion;
+	public fun <init> ()V
+	public fun <init> (Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentGateway;Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;)V
+	public synthetic fun <init> (Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentGateway;Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getBooleanEvaluation (Ljava/lang/String;ZLdev/openfeature/sdk/EvaluationContext;)Ldev/openfeature/sdk/ProviderEvaluation;
+	public fun getDoubleEvaluation (Ljava/lang/String;DLdev/openfeature/sdk/EvaluationContext;)Ldev/openfeature/sdk/ProviderEvaluation;
+	public fun getHooks ()Ljava/util/List;
+	public fun getIntegerEvaluation (Ljava/lang/String;ILdev/openfeature/sdk/EvaluationContext;)Ldev/openfeature/sdk/ProviderEvaluation;
+	public fun getMetadata ()Ldev/openfeature/sdk/ProviderMetadata;
+	public fun getObjectEvaluation (Ljava/lang/String;Ldev/openfeature/sdk/Value;Ldev/openfeature/sdk/EvaluationContext;)Ldev/openfeature/sdk/ProviderEvaluation;
+	public fun getStringEvaluation (Ljava/lang/String;Ljava/lang/String;Ldev/openfeature/sdk/EvaluationContext;)Ldev/openfeature/sdk/ProviderEvaluation;
+	public fun initialize (Ldev/openfeature/sdk/EvaluationContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun observe ()Lkotlinx/coroutines/flow/Flow;
+	public fun onContextSet (Ldev/openfeature/sdk/EvaluationContext;Ldev/openfeature/sdk/EvaluationContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun shutdown ()V
+	public fun track (Ljava/lang/String;Ldev/openfeature/sdk/EvaluationContext;Ldev/openfeature/sdk/TrackingEventDetails;)V
+}
+
+public final class dev/openfeature/kotlin/contrib/providers/envvar/EnvVarProvider$Companion {
+}
+
+public abstract interface class dev/openfeature/kotlin/contrib/providers/envvar/EnvironmentGateway {
+	public abstract fun getEnvironmentVariable (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public abstract interface class dev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer {
+	public static final field Companion Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer$Companion;
+	public abstract fun andThen (Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;)Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;
+	public abstract fun transformKey (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class dev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer$Companion {
+	public final fun doNothing ()Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;
+	public final fun hyphenCaseToScreamingSnake ()Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;
+	public final fun replaceDotWithUnderscoreTransformer ()Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;
+	public final fun replaceUnderscoreWithDotTransformer ()Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;
+	public final fun toCamelCaseTransformer ()Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;
+	public final fun toLowerCaseTransformer ()Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;
+	public final fun toUpperCaseTransformer ()Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;
+}
+
+public final class dev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer$DefaultImpls {
+	public static fun andThen (Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;)Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;
+}
+
+public final class dev/openfeature/kotlin/contrib/providers/envvar/PlatformSpecificEnvironmentGateway_jvmKt {
+	public static final fun platformSpecificEnvironmentGateway ()Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentGateway;
+}
+
