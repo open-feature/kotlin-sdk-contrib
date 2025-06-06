@@ -1,9 +1,13 @@
 [versions]
 kotlin = "2.1.21"
 kotlinx-coroutines = "1.10.2"
+okhttp = "4.12.0"
 open-feature-kotlin-sdk = "0.4.1"
+android = "8.10.1"
 
 [libraries]
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 openfeature-kotlin-sdk = { group="dev.openfeature", name="kotlin-sdk", version.ref="open-feature-kotlin-sdk" }
 kotlin-test = { group="org.jetbrains.kotlin", name="kotlin-test", version.ref="kotlin" }
 kotlinx-coroutines-core = { group="org.jetbrains.kotlinx", name="kotlinx-coroutines-core", version.ref="kotlinx-coroutines" }
@@ -15,3 +19,4 @@ kotlinx-atomicfu = { id="org.jetbrains.kotlinx.atomicfu", version="0.27.0" }
 ktlint = { id="org.jlleitschuh.gradle.ktlint", version="12.3.0" }
 nexus-publish = { id="io.github.gradle-nexus.publish-plugin", version="2.0.0" }
 binary-compatibility-validator = { id="org.jetbrains.kotlinx.binary-compatibility-validator", version="0.17.0" }
+android-library = { id="com.android.library", version.ref="android" }
