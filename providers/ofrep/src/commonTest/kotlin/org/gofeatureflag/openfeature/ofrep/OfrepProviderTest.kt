@@ -6,12 +6,12 @@ import dev.openfeature.sdk.FlagEvaluationDetails
 import dev.openfeature.sdk.ImmutableContext
 import dev.openfeature.sdk.OpenFeatureAPI
 import dev.openfeature.sdk.Value
-import dev.openfeature.sdk.events.OpenFeatureEvents
-import dev.openfeature.sdk.events.observe
+import dev.openfeature.sdk.events.OpenFeatureProviderEvents
 import dev.openfeature.sdk.exceptions.ErrorCode
 import dev.openfeature.sdk.exceptions.OpenFeatureError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -38,13 +38,12 @@ class OfrepProviderTest {
     }
 
     @After
-    fun after() {
-        OpenFeatureAPI.shutdown()
-        OpenFeatureAPI.clearProvider()
-        OpenFeatureAPI.clearHooks()
-        mockWebServer?.shutdown()
-        mockWebServer = null
-    }
+    fun after() =
+        runBlocking {
+            OpenFeatureAPI.shutdown()
+            mockWebServer?.shutdown()
+            mockWebServer = null
+        }
 
     @Test
     fun `should have a provider metadata`() {
@@ -62,11 +61,11 @@ class OfrepProviderTest {
 
             val coroutineScope = CoroutineScope(Dispatchers.IO)
             coroutineScope.launch {
-                provider.observe<OpenFeatureEvents.ProviderError>().take(1).collect {
+                provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                 }
             }
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             assert(providerErrorReceived) { "ProviderError event was not received" }
         }
 
@@ -80,11 +79,11 @@ class OfrepProviderTest {
 
             val coroutineScope = CoroutineScope(Dispatchers.IO)
             coroutineScope.launch {
-                provider.observe<OpenFeatureEvents.ProviderError>().take(1).collect {
+                provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                 }
             }
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             assert(providerErrorReceived) { "ProviderError event was not received" }
         }
 
@@ -103,12 +102,12 @@ class OfrepProviderTest {
 
             val coroutineScope = CoroutineScope(Dispatchers.IO)
             coroutineScope.launch {
-                provider.observe<OpenFeatureEvents.ProviderError>().take(1).collect {
+                provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                     exceptionReceived = it.error
                 }
             }
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             assert(providerErrorReceived) { "ProviderError event was not received" }
             assert(exceptionReceived is OfrepError.ApiTooManyRequestsError) { "The exception is not of type ApiTooManyRequestsError" }
         }
@@ -124,13 +123,13 @@ class OfrepProviderTest {
 
             val coroutineScope = CoroutineScope(Dispatchers.IO)
             coroutineScope.launch {
-                provider.observe<OpenFeatureEvents.ProviderError>().take(1).collect {
+                provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                     exceptionReceived = it.error
                 }
             }
             val evalCtx = ImmutableContext(targetingKey = "")
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, evalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, evalCtx, Dispatchers.IO)
             assert(providerErrorReceived) { "ProviderError event was not received" }
             assert(
                 exceptionReceived is OpenFeatureError.TargetingKeyMissingError,
@@ -148,13 +147,13 @@ class OfrepProviderTest {
 
             val coroutineScope = CoroutineScope(Dispatchers.IO)
             coroutineScope.launch {
-                provider.observe<OpenFeatureEvents.ProviderError>().take(1).collect {
+                provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                     exceptionReceived = it.error
                 }
             }
             val evalCtx = ImmutableContext()
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, evalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, evalCtx, Dispatchers.IO)
             assert(providerErrorReceived) { "ProviderError event was not received" }
             assert(
                 exceptionReceived is OpenFeatureError.TargetingKeyMissingError,
@@ -171,12 +170,12 @@ class OfrepProviderTest {
 
             val coroutineScope = CoroutineScope(Dispatchers.IO)
             coroutineScope.launch {
-                provider.observe<OpenFeatureEvents.ProviderError>().take(1).collect {
+                provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                     exceptionReceived = it.error
                 }
             }
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             assert(providerErrorReceived) { "ProviderError event was not received" }
             assert(exceptionReceived is OpenFeatureError.InvalidContextError) { "The exception is not of type InvalidContextError" }
         }
@@ -192,12 +191,12 @@ class OfrepProviderTest {
 
             val coroutineScope = CoroutineScope(Dispatchers.IO)
             coroutineScope.launch {
-                provider.observe<OpenFeatureEvents.ProviderError>().take(1).collect {
+                provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                     exceptionReceived = it.error
                 }
             }
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             assert(providerErrorReceived) { "ProviderError event was not received" }
             assert(exceptionReceived is OpenFeatureError.ParseError) { "The exception is not of type ParseError" }
         }
@@ -207,7 +206,7 @@ class OfrepProviderTest {
         runBlocking {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getBooleanDetails("non-existent-flag", false)
             val want =
@@ -230,7 +229,7 @@ class OfrepProviderTest {
                 200,
             )
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getStringDetails("title-flag", "default")
             val want =
@@ -259,7 +258,7 @@ class OfrepProviderTest {
                 200,
             )
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getStringDetails("my-other-flag", "default")
             val want =
@@ -286,7 +285,7 @@ class OfrepProviderTest {
                 200,
             )
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
 
             // TODO: should change when we have a way to observe context changes event
             //       check issue https://github.com/open-feature/kotlin-sdk/issues/107
@@ -295,10 +294,10 @@ class OfrepProviderTest {
 
             val coroutineScope = CoroutineScope(Dispatchers.IO)
             coroutineScope.launch {
-                provider.observe<OpenFeatureEvents.ProviderStale>().take(1).collect {
+                provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderStale>().take(1).collect {
                     providerStaleEventReceived = true
                 }
-                provider.observe<OpenFeatureEvents.ProviderReady>().take(1).collect {
+                provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderReady>().take(1).collect {
                     providerReadyEventReceived = true
                 }
             }
@@ -325,7 +324,7 @@ class OfrepProviderTest {
                         endpoint = mockWebServer?.url("/").toString(),
                     ),
                 )
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             client.getStringDetails("my-other-flag", "default")
             client.getStringDetails("my-other-flag", "default")
@@ -338,7 +337,7 @@ class OfrepProviderTest {
         runBlocking {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getBooleanDetails("bool-flag", false)
             val want =
@@ -365,7 +364,7 @@ class OfrepProviderTest {
         runBlocking {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getIntegerDetails("int-flag", 1)
             val want =
@@ -392,7 +391,7 @@ class OfrepProviderTest {
         runBlocking {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getDoubleDetails("double-flag", 1.1)
             val want =
@@ -419,7 +418,7 @@ class OfrepProviderTest {
         runBlocking {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getStringDetails("string-flag", "default")
             val want =
@@ -446,7 +445,7 @@ class OfrepProviderTest {
         runBlocking {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got =
                 client.getObjectDetails(
@@ -478,7 +477,7 @@ class OfrepProviderTest {
         runBlocking {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got =
                 client.getObjectDetails(
@@ -524,7 +523,7 @@ class OfrepProviderTest {
         runBlocking {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getBooleanDetails("object-flag", false)
             val want =
@@ -544,7 +543,7 @@ class OfrepProviderTest {
         runBlocking {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getStringDetails("object-flag", "default")
             val want =
@@ -564,7 +563,7 @@ class OfrepProviderTest {
         runBlocking {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getDoubleDetails("object-flag", 1.233)
             val want =
@@ -598,7 +597,7 @@ class OfrepProviderTest {
                         endpoint = mockWebServer?.url("/").toString(),
                     ),
                 )
-            OpenFeatureAPI.setProviderAndWait(provider, Dispatchers.IO, defaultEvalCtx)
+            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getStringDetails("badge-class2", "default")
             val want =

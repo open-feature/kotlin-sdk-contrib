@@ -12,8 +12,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            // TODO: update to api(libs.openfeature.kotlin.sdk)
-            api("dev.openfeature:android-sdk:0.3.2")
+            api(libs.openfeature.kotlin.sdk)
 
             api(libs.kotlinx.coroutines.core)
             api(libs.okhttp)

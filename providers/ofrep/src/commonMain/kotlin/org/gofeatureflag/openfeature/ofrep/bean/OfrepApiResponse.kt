@@ -1,14 +1,18 @@
+@file:OptIn(ExperimentalTime::class)
+
 import dev.openfeature.sdk.EvaluationMetadata
 import dev.openfeature.sdk.ProviderEvaluation
 import dev.openfeature.sdk.Value
 import dev.openfeature.sdk.exceptions.ErrorCode
 import dev.openfeature.sdk.exceptions.OpenFeatureError
 import kotlin.reflect.KClass
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 data class OfrepApiResponse(
     val flags: List<FlagDto>? = null,
     val errorCode: ErrorCode?,
-    val errorDetails: String?
+    val errorDetails: String?,
 )
 
 data class FlagDto(
@@ -18,11 +22,9 @@ data class FlagDto(
     val variant: String,
     val errorCode: ErrorCode?,
     val errorDetails: String?,
-    val metadata: Map<String, Any>? = emptyMap()
+    val metadata: Map<String, Any>? = emptyMap(),
 ) {
-    fun isError(): Boolean {
-        return errorCode != null
-    }
+    fun isError(): Boolean = errorCode != null
 
     fun <T : Any> toProviderEvaluation(expectedType: KClass<*>): ProviderEvaluation<T> {
         if (!expectedType.isInstance(value)) {
@@ -41,7 +43,7 @@ data class FlagDto(
                 variant = variant,
                 errorCode = errorCode,
                 errorMessage = errorDetails,
-                metadata = convertMetadata(metadata)
+                metadata = convertMetadata(metadata),
             )
         }
 
@@ -54,7 +56,7 @@ data class FlagDto(
                     variant = variant,
                     errorCode = errorCode,
                     errorMessage = errorDetails,
-                    metadata = convertMetadata(metadata)
+                    metadata = convertMetadata(metadata),
                 )
             } else if (value is Map<*, *>) {
                 val typedValue = convertObjectToStructure(value)
@@ -64,14 +66,12 @@ data class FlagDto(
                     variant = variant,
                     errorCode = errorCode,
                     errorMessage = errorDetails,
-                    metadata = convertMetadata(metadata)
+                    metadata = convertMetadata(metadata),
                 )
             } else {
                 throw IllegalArgumentException("Unsupported type for: $value")
             }
         }
-
-
 
         @Suppress("unchecked_cast")
         return ProviderEvaluation(
@@ -80,12 +80,12 @@ data class FlagDto(
             variant = variant,
             errorCode = errorCode,
             errorMessage = errorDetails,
-            metadata = convertMetadata(metadata)
+            metadata = convertMetadata(metadata),
         )
     }
 
     private fun convertMetadata(inputMap: Map<String, Any>?): EvaluationMetadata {
-        //check that inputMap is null or empty
+        // check that inputMap is null or empty
         if (inputMap.isNullOrEmpty()) {
             return EvaluationMetadata.EMPTY
         }
@@ -119,14 +119,14 @@ data class FlagDto(
         return metadataBuilder.build()
     }
 
-    private fun convertList(inputList: List<*>): List<Value> {
-        return inputList.map { item ->
+    private fun convertList(inputList: List<*>): List<Value> =
+        inputList.map { item ->
             when (item) {
                 is String -> Value.String(item)
                 is Boolean -> Value.Boolean(item)
                 is Long -> Value.Integer(item.toInt())
                 is Double -> Value.Double(item)
-                is java.util.Date -> Value.Date(item)
+                is Instant -> Value.Instant(item)
                 is Map<*, *> -> {
                     @Suppress("unchecked_cast")
                     Value.Structure(item as Map<String, Value>)
@@ -138,32 +138,32 @@ data class FlagDto(
                 }
 
                 else -> throw IllegalArgumentException(
-                    "Unsupported type for: $item"
+                    "Unsupported type for: $item",
                 )
             }
         }
-    }
 
     private fun convertObjectToStructure(obj: Any): Value.Structure {
         if (obj !is Map<*, *>) {
             throw IllegalArgumentException("Object must be a Map")
         }
-        val convertedMap = obj.entries.associate { (key, value) ->
-            if (key !is String) {
-                throw IllegalArgumentException("Map key must be a String")
+        val convertedMap =
+            obj.entries.associate { (key, value) ->
+                if (key !is String) {
+                    throw IllegalArgumentException("Map key must be a String")
+                }
+                key to
+                    when (value) {
+                        is String -> Value.String(value)
+                        is Boolean -> Value.Boolean(value)
+                        is Long -> Value.Integer(value.toInt())
+                        is Double -> Value.Double(value)
+                        is Instant -> Value.Instant(value)
+                        is Map<*, *> -> convertObjectToStructure(value)
+                        is List<*> -> Value.List(convertList(value as List<Any>))
+                        else -> throw IllegalArgumentException("Unsupported type for: $value")
+                    }
             }
-            key to when (value) {
-                is String -> Value.String(value)
-                is Boolean -> Value.Boolean(value)
-                is Long -> Value.Integer(value.toInt())
-                is Double -> Value.Double(value)
-                is java.util.Date -> Value.Date(value)
-                is Map<*, *> -> convertObjectToStructure(value)
-                is List<*> -> Value.List(convertList(value as List<Any>))
-                else -> throw IllegalArgumentException("Unsupported type for: $value")
-            }
-        }
         return Value.Structure(convertedMap)
     }
-
 }
