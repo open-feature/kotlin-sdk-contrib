@@ -22,7 +22,6 @@ import okhttp3.Headers
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.gofeatureflag.openfeature.ofrep.bean.OfrepOptions
-import org.gofeatureflag.openfeature.ofrep.error.OfrepError
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -115,7 +114,8 @@ class OfrepProviderTest {
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             runCurrent()
             assert(providerErrorReceived) { "ProviderError event was not received" }
-            assert(exceptionReceived is OfrepError.ApiTooManyRequestsError) { "The exception is not of type ApiTooManyRequestsError" }
+            assert(exceptionReceived is OpenFeatureError.GeneralError) { "The exception is not of type GeneralError" }
+            assert(exceptionReceived?.message == "Rate limited") { "The exception's message is not correct" }
         }
 
     @Test

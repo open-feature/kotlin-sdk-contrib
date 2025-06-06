@@ -60,6 +60,8 @@ class OfrepProvider(
             } else {
                 statusFlow.emit(OpenFeatureProviderEvents.ProviderReady)
             }
+        } catch (e: OpenFeatureError) {
+            statusFlow.emit(OpenFeatureProviderEvents.ProviderError(e))
         } catch (e: Exception) {
             statusFlow.emit(OpenFeatureProviderEvents.ProviderError(OpenFeatureError.GeneralError(e.message ?: "Unknown error")))
         }
@@ -221,8 +223,6 @@ class OfrepProvider(
         } catch (e: OfrepError.ApiTooManyRequestsError) {
             this.retryAfter = calculateRetryDate(e.response?.headers?.get("Retry-After") ?: "")
             return BulkEvaluationStatus.RATE_LIMITED
-        } catch (e: Throwable) {
-            throw e
         }
     }
 
