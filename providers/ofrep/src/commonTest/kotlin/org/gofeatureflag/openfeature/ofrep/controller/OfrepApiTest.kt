@@ -7,21 +7,18 @@ import dev.openfeature.sdk.Value
 import dev.openfeature.sdk.exceptions.ErrorCode
 import dev.openfeature.sdk.exceptions.OpenFeatureError
 import junit.framework.TestCase.assertFalse
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.gofeatureflag.openfeature.ofrep.bean.OfrepOptions
 import org.gofeatureflag.openfeature.ofrep.error.OfrepError
+import org.gofeatureflag.openfeature.ofrep.getResourceAsString
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.nio.file.Files
-import java.nio.file.Paths
 
 class OfrepApiTest {
     private var mockWebServer: MockWebServer? = null
@@ -40,14 +37,7 @@ class OfrepApiTest {
     @Test
     fun shouldReturnAValidEvaluationResponse() =
         runBlocking {
-            val jsonFilePath =
-                javaClass.classLoader?.getResource("ofrep/valid_api_short_response.json")?.file
-            val jsonString =
-                String(
-                    withContext(Dispatchers.IO) {
-                        Files.readAllBytes(Paths.get(jsonFilePath))
-                    },
-                )
+            val jsonString = getResourceAsString("ofrep/valid_api_short_response.json")
 
             mockWebServer!!.enqueue(MockResponse().setBody(jsonString.trimIndent()))
 
@@ -251,14 +241,7 @@ class OfrepApiTest {
     @Test
     fun shouldThrowUnmarshallErrorWithInvalidJson(): Unit =
         runBlocking {
-            val jsonFilePath =
-                javaClass.classLoader?.getResource("ofrep/invalid_api_response.json")?.file
-            val jsonString =
-                String(
-                    withContext(Dispatchers.IO) {
-                        Files.readAllBytes(Paths.get(jsonFilePath))
-                    },
-                )
+            val jsonString = getResourceAsString("ofrep/invalid_api_response.json")
 
             mockWebServer!!.enqueue(
                 MockResponse().setBody(jsonString.trimIndent()).setResponseCode(400),
@@ -279,14 +262,7 @@ class OfrepApiTest {
     @Test
     fun shouldThrowWithInvalidOptions(): Unit =
         runBlocking {
-            val jsonFilePath =
-                javaClass.classLoader?.getResource("ofrep/invalid_api_response.json")?.file
-            val jsonString =
-                String(
-                    withContext(Dispatchers.IO) {
-                        Files.readAllBytes(Paths.get(jsonFilePath))
-                    },
-                )
+            val jsonString = getResourceAsString("ofrep/invalid_api_response.json")
 
             mockWebServer!!.enqueue(
                 MockResponse().setBody(jsonString.trimIndent()).setResponseCode(400),
@@ -301,14 +277,7 @@ class OfrepApiTest {
     @Test
     fun shouldETagShouldNotMatch(): Unit =
         runBlocking {
-            val jsonFilePath =
-                javaClass.classLoader?.getResource("ofrep/valid_api_response.json")?.file
-            val jsonString =
-                String(
-                    withContext(Dispatchers.IO) {
-                        Files.readAllBytes(Paths.get(jsonFilePath))
-                    },
-                )
+            val jsonString = getResourceAsString("ofrep/valid_api_response.json")
 
             mockWebServer!!.enqueue(
                 MockResponse()
@@ -338,14 +307,7 @@ class OfrepApiTest {
     @Test
     fun shouldHaveIfNoneNullInTheHeaders(): Unit =
         runBlocking {
-            val jsonFilePath =
-                javaClass.classLoader?.getResource("ofrep/valid_api_response.json")?.file
-            val jsonString =
-                String(
-                    withContext(Dispatchers.IO) {
-                        Files.readAllBytes(Paths.get(jsonFilePath))
-                    },
-                )
+            val jsonString = getResourceAsString("ofrep/valid_api_response.json")
 
             mockWebServer!!.enqueue(
                 MockResponse()

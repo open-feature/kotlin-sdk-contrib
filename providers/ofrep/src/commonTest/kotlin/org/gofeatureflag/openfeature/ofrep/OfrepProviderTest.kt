@@ -24,8 +24,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.util.UUID
 
 class OfrepProviderTest {
@@ -632,9 +630,7 @@ class OfrepProviderTest {
         responseCode: Int = 200,
         headers: Headers? = null,
     ) {
-        val jsonFilePath =
-            javaClass.classLoader?.getResource(fileName)?.file
-        val jsonString = String(Files.readAllBytes(Paths.get(jsonFilePath)))
+        val jsonString = getResourceAsString(fileName)
         var resp =
             MockResponse()
                 .setBody(jsonString.trimIndent())
