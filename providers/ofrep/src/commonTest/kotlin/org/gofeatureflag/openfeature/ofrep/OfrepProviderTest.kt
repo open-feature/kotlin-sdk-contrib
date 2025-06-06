@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package org.gofeatureflag.openfeature.ofrep
 
 import dev.openfeature.sdk.EvaluationContext
@@ -9,12 +11,13 @@ import dev.openfeature.sdk.Value
 import dev.openfeature.sdk.events.OpenFeatureProviderEvents
 import dev.openfeature.sdk.exceptions.ErrorCode
 import dev.openfeature.sdk.exceptions.OpenFeatureError
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import okhttp3.Headers
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -39,7 +42,7 @@ class OfrepProviderTest {
 
     @After
     fun after() =
-        runBlocking {
+        runTest {
             OpenFeatureAPI.shutdown()
             mockWebServer?.shutdown()
             mockWebServer = null
@@ -53,43 +56,45 @@ class OfrepProviderTest {
 
     @Test
     fun `should be in Fatal status if 401 error during initialise`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 401)
 
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             var providerErrorReceived = false
 
-            val coroutineScope = CoroutineScope(Dispatchers.IO)
-            coroutineScope.launch {
+            launch {
                 provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                 }
             }
+            runCurrent()
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
+            runCurrent()
             assert(providerErrorReceived) { "ProviderError event was not received" }
         }
 
     @Test
     fun `should be in Fatal status if 403 error during initialise`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 403)
 
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             var providerErrorReceived = false
 
-            val coroutineScope = CoroutineScope(Dispatchers.IO)
-            coroutineScope.launch {
+            launch {
                 provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                 }
             }
+            runCurrent()
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
+            runCurrent()
             assert(providerErrorReceived) { "ProviderError event was not received" }
         }
 
     @Test
     fun `should be in Error status if 429 error during initialise`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse(
                 "ofrep/valid_api_response.json",
                 429,
@@ -100,36 +105,38 @@ class OfrepProviderTest {
             var providerErrorReceived = false
             var exceptionReceived: Throwable? = null
 
-            val coroutineScope = CoroutineScope(Dispatchers.IO)
-            coroutineScope.launch {
+            launch {
                 provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                     exceptionReceived = it.error
                 }
             }
+            runCurrent()
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
+            runCurrent()
             assert(providerErrorReceived) { "ProviderError event was not received" }
             assert(exceptionReceived is OfrepError.ApiTooManyRequestsError) { "The exception is not of type ApiTooManyRequestsError" }
         }
 
     @Test
     fun `should be in Error status if error targeting key is empty`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
 
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             var providerErrorReceived = false
             var exceptionReceived: Throwable? = null
 
-            val coroutineScope = CoroutineScope(Dispatchers.IO)
-            coroutineScope.launch {
+            launch {
                 provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                     exceptionReceived = it.error
                 }
             }
+            runCurrent()
             val evalCtx = ImmutableContext(targetingKey = "")
             OpenFeatureAPI.setProviderAndWait(provider, evalCtx, Dispatchers.IO)
+            runCurrent()
             assert(providerErrorReceived) { "ProviderError event was not received" }
             assert(
                 exceptionReceived is OpenFeatureError.TargetingKeyMissingError,
@@ -138,22 +145,23 @@ class OfrepProviderTest {
 
     @Test
     fun `should be in Error status if error targeting key is missing`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
 
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             var providerErrorReceived = false
             var exceptionReceived: Throwable? = null
 
-            val coroutineScope = CoroutineScope(Dispatchers.IO)
-            coroutineScope.launch {
+            launch {
                 provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                     exceptionReceived = it.error
                 }
             }
+            runCurrent()
             val evalCtx = ImmutableContext()
             OpenFeatureAPI.setProviderAndWait(provider, evalCtx, Dispatchers.IO)
+            runCurrent()
             assert(providerErrorReceived) { "ProviderError event was not received" }
             assert(
                 exceptionReceived is OpenFeatureError.TargetingKeyMissingError,
@@ -162,48 +170,50 @@ class OfrepProviderTest {
 
     @Test
     fun `should be in error status if error invalid context`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/invalid_context.json", 400)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             var providerErrorReceived = false
             var exceptionReceived: Throwable? = null
 
-            val coroutineScope = CoroutineScope(Dispatchers.IO)
-            coroutineScope.launch {
+            launch {
                 provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                     exceptionReceived = it.error
                 }
             }
+            runCurrent()
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
+            runCurrent()
             assert(providerErrorReceived) { "ProviderError event was not received" }
             assert(exceptionReceived is OpenFeatureError.InvalidContextError) { "The exception is not of type InvalidContextError" }
         }
 
     @Test
     fun `should be in error status if error parse error`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/parse_error.json", 400)
 
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             var providerErrorReceived = false
             var exceptionReceived: Throwable? = null
 
-            val coroutineScope = CoroutineScope(Dispatchers.IO)
-            coroutineScope.launch {
+            launch {
                 provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderError>().take(1).collect {
                     providerErrorReceived = true
                     exceptionReceived = it.error
                 }
             }
+            runCurrent()
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
+            runCurrent()
             assert(providerErrorReceived) { "ProviderError event was not received" }
             assert(exceptionReceived is OpenFeatureError.ParseError) { "The exception is not of type ParseError" }
         }
 
     @Test
     fun `should return a flag not found error if the flag does not exist`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
@@ -223,7 +233,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should return evaluation details if the flag exists`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse(
                 "ofrep/valid_api_short_response.json",
                 200,
@@ -252,7 +262,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should return parse error if the API returns the error`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse(
                 "ofrep/valid_1_flag_in_parse_error.json",
                 200,
@@ -275,7 +285,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should send a context changed event if context has changed`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse(
                 "ofrep/valid_api_response.json",
                 200,
@@ -292,8 +302,7 @@ class OfrepProviderTest {
             var providerStaleEventReceived = false
             var providerReadyEventReceived = false
 
-            val coroutineScope = CoroutineScope(Dispatchers.IO)
-            coroutineScope.launch {
+            launch {
                 provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderStale>().take(1).collect {
                     providerStaleEventReceived = true
                 }
@@ -301,17 +310,19 @@ class OfrepProviderTest {
                     providerReadyEventReceived = true
                 }
             }
+            runCurrent()
             Thread.sleep(1000) // waiting to be sure that setEvaluationContext has been processed
             val newEvalCtx = ImmutableContext(targetingKey = UUID.randomUUID().toString())
             OpenFeatureAPI.setEvaluationContext(newEvalCtx)
             Thread.sleep(1000) // waiting to be sure that setEvaluationContext has been processed
+            runCurrent()
             assert(providerStaleEventReceived) { "ProviderStale event was not received" }
             assert(providerReadyEventReceived) { "ProviderReady event was not received" }
         }
 
     @Test
     fun `should not try to call the API before Retry-After header`(): Unit =
-        runBlocking {
+        runTest {
             mockWebServer!!.enqueue(
                 MockResponse()
                     .setResponseCode(429)
@@ -334,7 +345,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should return a valid evaluation for Boolean`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
@@ -361,7 +372,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should return a valid evaluation for Int`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
@@ -388,7 +399,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should return a valid evaluation for Double`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
@@ -415,7 +426,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should return a valid evaluation for String`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
@@ -442,7 +453,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should return a valid evaluation for List`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
@@ -474,7 +485,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should return a valid evaluation for Map`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
@@ -520,7 +531,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should return TypeMismatch Bool`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
@@ -540,7 +551,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should return TypeMismatch String`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
@@ -560,7 +571,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should return TypeMismatch Double`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
@@ -580,7 +591,7 @@ class OfrepProviderTest {
 
     @Test
     fun `should have different result if waiting for next polling interval`(): Unit =
-        runBlocking {
+        runTest {
             enqueueMockResponse(
                 "ofrep/valid_api_short_response.json",
                 200,
