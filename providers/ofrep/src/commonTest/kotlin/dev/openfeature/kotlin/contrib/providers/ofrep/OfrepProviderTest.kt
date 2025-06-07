@@ -1,7 +1,8 @@
 @file:OptIn(ExperimentalCoroutinesApi::class)
 
-package org.gofeatureflag.openfeature.ofrep
+package dev.openfeature.kotlin.contrib.providers.ofrep
 
+import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
 import dev.openfeature.sdk.EvaluationContext
 import dev.openfeature.sdk.EvaluationMetadata
 import dev.openfeature.sdk.FlagEvaluationDetails
@@ -21,7 +22,6 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.Headers
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import org.gofeatureflag.openfeature.ofrep.bean.OfrepOptions
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule

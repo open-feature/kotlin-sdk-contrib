@@ -1,4 +1,4 @@
-package org.gofeatureflag.openfeature.ofrep
+package dev.openfeature.kotlin.contrib.providers.ofrep
 
 import okio.FileSystem
 import okio.Path.Companion.toPath

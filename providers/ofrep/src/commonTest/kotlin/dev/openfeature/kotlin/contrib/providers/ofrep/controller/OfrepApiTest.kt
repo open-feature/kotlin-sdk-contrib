@@ -1,7 +1,10 @@
-package org.gofeatureflag.openfeature.ofrep.controller
+package dev.openfeature.kotlin.contrib.providers.ofrep.controller
 
 import FlagDto
 import OfrepApiResponse
+import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
+import dev.openfeature.kotlin.contrib.providers.ofrep.error.OfrepError
+import dev.openfeature.kotlin.contrib.providers.ofrep.getResourceAsString
 import dev.openfeature.sdk.ImmutableContext
 import dev.openfeature.sdk.Value
 import dev.openfeature.sdk.exceptions.ErrorCode
@@ -10,9 +13,6 @@ import junit.framework.TestCase.assertFalse
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import org.gofeatureflag.openfeature.ofrep.bean.OfrepOptions
-import org.gofeatureflag.openfeature.ofrep.error.OfrepError
-import org.gofeatureflag.openfeature.ofrep.getResourceAsString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue

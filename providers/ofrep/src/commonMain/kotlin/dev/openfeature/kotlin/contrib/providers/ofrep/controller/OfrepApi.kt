@@ -1,10 +1,13 @@
-package org.gofeatureflag.openfeature.ofrep.controller
+package dev.openfeature.kotlin.contrib.providers.ofrep.controller
 
 import OfrepApiRequest
 import OfrepApiResponse
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
 import com.google.gson.ToNumberPolicy
+import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
+import dev.openfeature.kotlin.contrib.providers.ofrep.bean.PostBulkEvaluationResult
+import dev.openfeature.kotlin.contrib.providers.ofrep.error.OfrepError
 import dev.openfeature.sdk.EvaluationContext
 import dev.openfeature.sdk.exceptions.OpenFeatureError
 import okhttp3.ConnectionPool
@@ -13,9 +16,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.gofeatureflag.openfeature.ofrep.bean.OfrepOptions
-import org.gofeatureflag.openfeature.ofrep.bean.PostBulkEvaluationResult
-import org.gofeatureflag.openfeature.ofrep.error.OfrepError
 import java.util.concurrent.TimeUnit
 
 class OfrepApi(

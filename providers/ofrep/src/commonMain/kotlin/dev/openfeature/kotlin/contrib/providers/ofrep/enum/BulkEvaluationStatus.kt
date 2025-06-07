@@ -1,4 +1,4 @@
-package org.gofeatureflag.openfeature.ofrep.enum
+package dev.openfeature.kotlin.contrib.providers.ofrep.enum
 
 enum class BulkEvaluationStatus {
     SUCCESS_NO_CHANGE,

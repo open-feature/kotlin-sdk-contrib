@@ -1,6 +1,11 @@
-package org.gofeatureflag.openfeature.ofrep
+package dev.openfeature.kotlin.contrib.providers.ofrep
 
 import FlagDto
+import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
+import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepProviderMetadata
+import dev.openfeature.kotlin.contrib.providers.ofrep.controller.OfrepApi
+import dev.openfeature.kotlin.contrib.providers.ofrep.enum.BulkEvaluationStatus
+import dev.openfeature.kotlin.contrib.providers.ofrep.error.OfrepError
 import dev.openfeature.sdk.EvaluationContext
 import dev.openfeature.sdk.FeatureProvider
 import dev.openfeature.sdk.Hook
@@ -14,11 +19,6 @@ import dev.openfeature.sdk.exceptions.OpenFeatureError
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.runBlocking
-import org.gofeatureflag.openfeature.ofrep.bean.OfrepOptions
-import org.gofeatureflag.openfeature.ofrep.bean.OfrepProviderMetadata
-import org.gofeatureflag.openfeature.ofrep.controller.OfrepApi
-import org.gofeatureflag.openfeature.ofrep.enum.BulkEvaluationStatus
-import org.gofeatureflag.openfeature.ofrep.error.OfrepError
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date

@@ -1,4 +1,4 @@
-package org.gofeatureflag.openfeature.ofrep.bean
+package dev.openfeature.kotlin.contrib.providers.ofrep.bean
 
 import dev.openfeature.sdk.ProviderMetadata
 
