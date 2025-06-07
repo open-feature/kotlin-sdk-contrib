@@ -1,44 +1,44 @@
 package org.gofeatureflag.openfeature.ofrep.bean
 
 import okhttp3.Headers
-
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 data class OfrepOptions(
     /**
-     * (mandatory) endpoint contains the DNS of your GO Feature Flag relay proxy
-     * example: https://mydomain.com/gofeatureflagproxy/
+     * The endpoint of the OFREP API.
+     *
+     * Example: `https://mydomain.com/gofeatureflagproxy/`
      */
     val endpoint: String,
-
     /**
-     * (optional) timeout in millisecond we are waiting when calling the
-     * go-feature-flag relay proxy API.
-     * Default: 10000 ms
+     * Timeout of the OFREP API calls.
+     *
+     * Default: `10.seconds`
      */
-    val timeout: Long = 10000,
-
+    val timeout: Duration = 10.seconds,
     /**
-     * (optional) maxIdleConnections is the maximum number of connexions in the connexion pool.
-     * Default: 1000
+     * MaxIdleConnections is the maximum number of connexions in the connexion pool.
+     *
+     * Default: `1000`
      */
     val maxIdleConnections: Int = 1000,
-
     /**
-     * (optional) keepAliveDuration is the time in millisecond we keep the connexion open.
-     * Default: 7200000 (2 hours)
+     * The time to keep the connection open.
+     *
+     * Default: `2.hours`
      */
-    val keepAliveDuration: Long = 7200000,
-
-
+    val keepAliveDuration: Duration = 2.hours,
     /**
-     * (optional) headers to add to the OFREP calls
+     * Headers to add to the OFREP calls
      * Default: empty
      */
     val headers: Headers? = null,
-
     /**
-     * (optional) polling interval in millisecond to refresh the flags
-     * Default: 300000 (5 minutes)
+     * Polling interval to refresh the flags
+     * Default: `5.minutes`
      */
-    val pollingIntervalInMillis: Long = 300000
+    val pollingInterval: Duration = 5.minutes,
 )

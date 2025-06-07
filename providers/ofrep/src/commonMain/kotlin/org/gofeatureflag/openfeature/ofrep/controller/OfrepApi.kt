@@ -26,24 +26,29 @@ class OfrepApi(
             GsonBuilder().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create()
     }
 
-    private var httpClient: OkHttpClient =
-        OkHttpClient
-            .Builder()
-            .connectTimeout(this.options.timeout, TimeUnit.MILLISECONDS)
-            .readTimeout(this.options.timeout, TimeUnit.MILLISECONDS)
-            .callTimeout(this.options.timeout, TimeUnit.MILLISECONDS)
-            .writeTimeout(this.options.timeout, TimeUnit.MILLISECONDS)
-            .connectionPool(
-                ConnectionPool(
-                    this.options.maxIdleConnections,
-                    this.options.keepAliveDuration,
-                    TimeUnit.MILLISECONDS,
-                ),
-            ).build()
+    private val httpClient: OkHttpClient
     private var parsedEndpoint: HttpUrl =
         options.endpoint.toHttpUrlOrNull()
             ?: throw OfrepError.InvalidOptionsError("invalid endpoint configuration: ${options.endpoint}")
     private var etag: String? = null
+
+    init {
+        val timeoutInMilliseconds = options.timeout.inWholeMilliseconds
+        httpClient =
+            OkHttpClient
+                .Builder()
+                .connectTimeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS)
+                .readTimeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS)
+                .callTimeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS)
+                .writeTimeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS)
+                .connectionPool(
+                    ConnectionPool(
+                        options.maxIdleConnections,
+                        options.keepAliveDuration.inWholeMilliseconds,
+                        TimeUnit.MILLISECONDS,
+                    ),
+                ).build()
+    }
 
     /**
      * Call the OFREP API to evaluate in bulk the flags for the given context.

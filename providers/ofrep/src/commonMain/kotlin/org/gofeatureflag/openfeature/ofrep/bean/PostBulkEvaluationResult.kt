@@ -4,7 +4,7 @@ import OfrepApiResponse
 
 data class PostBulkEvaluationResult(
     val apiResponse: OfrepApiResponse?,
-    val httpResponse: okhttp3.Response
+    val httpResponse: okhttp3.Response,
 ) {
     fun isError(): Boolean {
         return apiResponse?.errorCode != null

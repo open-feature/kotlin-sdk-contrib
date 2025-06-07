@@ -65,13 +65,13 @@ class OfrepProvider(
         } catch (e: Exception) {
             statusFlow.emit(OpenFeatureProviderEvents.ProviderError(OpenFeatureError.GeneralError(e.message ?: "Unknown error")))
         }
-        this.startPolling(this.ofrepOptions.pollingIntervalInMillis)
+        startPolling()
     }
 
     /**
      * Start polling for flag updates
      */
-    private fun startPolling(pollingIntervalInMillis: Long) {
+    private fun startPolling() {
         val task: TimerTask =
             object : TimerTask() {
                 override fun run() {
@@ -107,8 +107,9 @@ class OfrepProvider(
                 }
             }
         val timer = Timer()
+        val pollingIntervalInMillis = ofrepOptions.pollingInterval.inWholeMilliseconds
         timer.schedule(task, pollingIntervalInMillis, pollingIntervalInMillis)
-        this.pollingTimer = timer
+        pollingTimer = timer
     }
 
     override fun getBooleanEvaluation(

@@ -27,6 +27,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import java.util.UUID
+import kotlin.time.Duration.Companion.milliseconds
 
 class OfrepProviderTest {
     @get:Rule
@@ -324,7 +325,7 @@ class OfrepProviderTest {
             val provider =
                 OfrepProvider(
                     OfrepOptions(
-                        pollingIntervalInMillis = 100,
+                        pollingInterval = 100.milliseconds,
                         endpoint = mockWebServer.url("/").toString(),
                     ),
                 )
@@ -597,7 +598,7 @@ class OfrepProviderTest {
             val provider =
                 OfrepProvider(
                     OfrepOptions(
-                        pollingIntervalInMillis = 100,
+                        pollingInterval = 100.milliseconds,
                         endpoint = mockWebServer.url("/").toString(),
                     ),
                 )
