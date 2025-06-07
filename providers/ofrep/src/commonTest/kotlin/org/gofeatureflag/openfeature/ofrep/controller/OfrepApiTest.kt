@@ -13,37 +13,26 @@ import okhttp3.mockwebserver.MockWebServer
 import org.gofeatureflag.openfeature.ofrep.bean.OfrepOptions
 import org.gofeatureflag.openfeature.ofrep.error.OfrepError
 import org.gofeatureflag.openfeature.ofrep.getResourceAsString
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
 class OfrepApiTest {
-    private var mockWebServer: MockWebServer? = null
-
-    @Before
-    fun before() {
-        mockWebServer = MockWebServer()
-        mockWebServer!!.start(10031)
-    }
-
-    @After
-    fun after() {
-        mockWebServer!!.shutdown()
-    }
+    @get:Rule
+    val mockWebServer = MockWebServer()
 
     @Test
     fun shouldReturnAValidEvaluationResponse() =
         runBlocking {
             val jsonString = getResourceAsString("ofrep/valid_api_short_response.json")
 
-            mockWebServer!!.enqueue(MockResponse().setBody(jsonString.trimIndent()))
+            mockWebServer.enqueue(MockResponse().setBody(jsonString.trimIndent()))
 
             val ofrepApi =
                 OfrepApi(
-                    OfrepOptions(endpoint = mockWebServer!!.url("/").toString()),
+                    OfrepOptions(endpoint = mockWebServer.url("/").toString()),
                 )
             val ctx =
                 ImmutableContext(
@@ -101,10 +90,10 @@ class OfrepApiTest {
     @Test
     fun shouldThrowAnUnauthorizedError(): Unit =
         runBlocking {
-            mockWebServer!!.enqueue(MockResponse().setBody("{}").setResponseCode(401))
+            mockWebServer.enqueue(MockResponse().setBody("{}").setResponseCode(401))
             val ofrepApi =
                 OfrepApi(
-                    OfrepOptions(endpoint = mockWebServer!!.url("/").toString()),
+                    OfrepOptions(endpoint = mockWebServer.url("/").toString()),
                 )
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
             assertThrows(OfrepError.ApiUnauthorizedError::class.java) {
@@ -117,10 +106,10 @@ class OfrepApiTest {
     @Test
     fun shouldThrowAForbiddenError(): Unit =
         runBlocking {
-            mockWebServer!!.enqueue(MockResponse().setBody("{}").setResponseCode(403))
+            mockWebServer.enqueue(MockResponse().setBody("{}").setResponseCode(403))
             val ofrepApi =
                 OfrepApi(
-                    OfrepOptions(endpoint = mockWebServer!!.url("/").toString()),
+                    OfrepOptions(endpoint = mockWebServer.url("/").toString()),
                 )
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
             assertThrows(OfrepError.ForbiddenError::class.java) {
@@ -133,7 +122,7 @@ class OfrepApiTest {
     @Test
     fun shouldThrowTooManyRequest(): Unit =
         runBlocking {
-            mockWebServer!!.enqueue(
+            mockWebServer.enqueue(
                 MockResponse()
                     .setBody("{}")
                     .setResponseCode(429)
@@ -141,7 +130,7 @@ class OfrepApiTest {
             )
             val ofrepApi =
                 OfrepApi(
-                    OfrepOptions(endpoint = mockWebServer!!.url("/").toString()),
+                    OfrepOptions(endpoint = mockWebServer.url("/").toString()),
                 )
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
             try {
@@ -156,14 +145,14 @@ class OfrepApiTest {
     @Test
     fun shouldThrowUnexpectedError(): Unit =
         runBlocking {
-            mockWebServer!!.enqueue(
+            mockWebServer.enqueue(
                 MockResponse()
                     .setBody("{}")
                     .setResponseCode(500),
             )
             val ofrepApi =
                 OfrepApi(
-                    OfrepOptions(endpoint = mockWebServer!!.url("/").toString()),
+                    OfrepOptions(endpoint = mockWebServer.url("/").toString()),
                 )
 
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
@@ -177,7 +166,7 @@ class OfrepApiTest {
     @Test
     fun shouldReturnAnEvaluationResponseInError(): Unit =
         runBlocking {
-            mockWebServer!!.enqueue(
+            mockWebServer.enqueue(
                 MockResponse()
                     .setBody(
                         """
@@ -187,7 +176,7 @@ class OfrepApiTest {
             )
             val ofrepApi =
                 OfrepApi(
-                    OfrepOptions(endpoint = mockWebServer!!.url("/").toString()),
+                    OfrepOptions(endpoint = mockWebServer.url("/").toString()),
                 )
 
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
@@ -201,14 +190,14 @@ class OfrepApiTest {
     @Test
     fun shouldReturnaEvaluationResponseIfWeReceiveA304(): Unit =
         runBlocking {
-            mockWebServer!!.enqueue(
+            mockWebServer.enqueue(
                 MockResponse()
                     .setBody("{}")
                     .setResponseCode(304),
             )
             val ofrepApi =
                 OfrepApi(
-                    OfrepOptions(endpoint = mockWebServer!!.url("/").toString()),
+                    OfrepOptions(endpoint = mockWebServer.url("/").toString()),
                 )
 
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
@@ -220,14 +209,14 @@ class OfrepApiTest {
     @Test
     fun shouldThrowTargetingKeyMissingErrorWithNoTargetingKey(): Unit =
         runBlocking {
-            mockWebServer!!.enqueue(
+            mockWebServer.enqueue(
                 MockResponse()
                     .setBody("{}")
                     .setResponseCode(304),
             )
             val ofrepApi =
                 OfrepApi(
-                    OfrepOptions(endpoint = mockWebServer!!.url("/").toString()),
+                    OfrepOptions(endpoint = mockWebServer.url("/").toString()),
                 )
 
             val ctx = ImmutableContext(targetingKey = "")
@@ -243,12 +232,12 @@ class OfrepApiTest {
         runBlocking {
             val jsonString = getResourceAsString("ofrep/invalid_api_response.json")
 
-            mockWebServer!!.enqueue(
+            mockWebServer.enqueue(
                 MockResponse().setBody(jsonString.trimIndent()).setResponseCode(400),
             )
             val ofrepApi =
                 OfrepApi(
-                    OfrepOptions(endpoint = mockWebServer!!.url("/").toString()),
+                    OfrepOptions(endpoint = mockWebServer.url("/").toString()),
                 )
 
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
@@ -264,7 +253,7 @@ class OfrepApiTest {
         runBlocking {
             val jsonString = getResourceAsString("ofrep/invalid_api_response.json")
 
-            mockWebServer!!.enqueue(
+            mockWebServer.enqueue(
                 MockResponse().setBody(jsonString.trimIndent()).setResponseCode(400),
             )
             assertThrows(OfrepError.InvalidOptionsError::class.java) {
@@ -279,13 +268,13 @@ class OfrepApiTest {
         runBlocking {
             val jsonString = getResourceAsString("ofrep/valid_api_response.json")
 
-            mockWebServer!!.enqueue(
+            mockWebServer.enqueue(
                 MockResponse()
                     .setBody(jsonString.trimIndent())
                     .setResponseCode(200)
                     .addHeader("ETag", "123"),
             )
-            mockWebServer!!.enqueue(
+            mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(304)
                     .addHeader("ETag", "123"),
@@ -293,7 +282,7 @@ class OfrepApiTest {
 
             val ofrepApi =
                 OfrepApi(
-                    OfrepOptions(endpoint = mockWebServer!!.url("/").toString()),
+                    OfrepOptions(endpoint = mockWebServer.url("/").toString()),
                 )
 
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
@@ -301,7 +290,7 @@ class OfrepApiTest {
             val eval2 = ofrepApi.postBulkEvaluateFlags(ctx)
             assertEquals(eval1.httpResponse.code, 200)
             assertEquals(eval2.httpResponse.code, 304)
-            assertEquals(2, mockWebServer!!.requestCount)
+            assertEquals(2, mockWebServer.requestCount)
         }
 
     @Test
@@ -309,13 +298,13 @@ class OfrepApiTest {
         runBlocking {
             val jsonString = getResourceAsString("ofrep/valid_api_response.json")
 
-            mockWebServer!!.enqueue(
+            mockWebServer.enqueue(
                 MockResponse()
                     .setBody(jsonString.trimIndent())
                     .setResponseCode(200)
                     .addHeader("ETag", "123"),
             )
-            mockWebServer!!.enqueue(
+            mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(304)
                     .addHeader("ETag", "123"),
@@ -323,7 +312,7 @@ class OfrepApiTest {
 
             val ofrepApi =
                 OfrepApi(
-                    OfrepOptions(endpoint = mockWebServer!!.url("/").toString()),
+                    OfrepOptions(endpoint = mockWebServer.url("/").toString()),
                 )
 
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
@@ -331,6 +320,6 @@ class OfrepApiTest {
             val eval2 = ofrepApi.postBulkEvaluateFlags(ctx)
             assertEquals(eval1.httpResponse.code, 200)
             assertEquals(eval2.httpResponse.code, 304)
-            assertEquals(2, mockWebServer!!.requestCount)
+            assertEquals(2, mockWebServer.requestCount)
         }
 }

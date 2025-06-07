@@ -24,27 +24,20 @@ import okhttp3.mockwebserver.MockWebServer
 import org.gofeatureflag.openfeature.ofrep.bean.OfrepOptions
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import java.util.UUID
 
 class OfrepProviderTest {
-    private var mockWebServer: MockWebServer? = null
-    private var defaultEvalCtx: EvaluationContext =
+    @get:Rule
+    val mockWebServer = MockWebServer()
+    private val defaultEvalCtx: EvaluationContext =
         ImmutableContext(targetingKey = UUID.randomUUID().toString())
-
-    @Before
-    fun before() {
-        mockWebServer = MockWebServer()
-        mockWebServer!!.start(10031)
-    }
 
     @After
     fun after() =
         runTest {
             OpenFeatureAPI.shutdown()
-            mockWebServer?.shutdown()
-            mockWebServer = null
         }
 
     @Test
@@ -58,7 +51,7 @@ class OfrepProviderTest {
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 401)
 
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             var providerErrorReceived = false
 
             launch {
@@ -77,7 +70,7 @@ class OfrepProviderTest {
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 403)
 
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             var providerErrorReceived = false
 
             launch {
@@ -100,7 +93,7 @@ class OfrepProviderTest {
                 Headers.headersOf("Retry-After", "3"),
             )
 
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             var providerErrorReceived = false
             var exceptionReceived: Throwable? = null
 
@@ -123,7 +116,7 @@ class OfrepProviderTest {
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
 
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             var providerErrorReceived = false
             var exceptionReceived: Throwable? = null
 
@@ -148,7 +141,7 @@ class OfrepProviderTest {
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
 
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             var providerErrorReceived = false
             var exceptionReceived: Throwable? = null
 
@@ -172,7 +165,7 @@ class OfrepProviderTest {
     fun `should be in error status if error invalid context`(): Unit =
         runTest {
             enqueueMockResponse("ofrep/invalid_context.json", 400)
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             var providerErrorReceived = false
             var exceptionReceived: Throwable? = null
 
@@ -194,7 +187,7 @@ class OfrepProviderTest {
         runTest {
             enqueueMockResponse("ofrep/parse_error.json", 400)
 
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             var providerErrorReceived = false
             var exceptionReceived: Throwable? = null
 
@@ -215,7 +208,7 @@ class OfrepProviderTest {
     fun `should return a flag not found error if the flag does not exist`(): Unit =
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getBooleanDetails("non-existent-flag", false)
@@ -238,7 +231,7 @@ class OfrepProviderTest {
                 "ofrep/valid_api_short_response.json",
                 200,
             )
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getStringDetails("title-flag", "default")
@@ -267,7 +260,7 @@ class OfrepProviderTest {
                 "ofrep/valid_1_flag_in_parse_error.json",
                 200,
             )
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getStringDetails("my-other-flag", "default")
@@ -294,7 +287,7 @@ class OfrepProviderTest {
                 "ofrep/valid_api_response_2.json",
                 200,
             )
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
 
             // TODO: should change when we have a way to observe context changes event
@@ -323,7 +316,7 @@ class OfrepProviderTest {
     @Test
     fun `should not try to call the API before Retry-After header`(): Unit =
         runTest {
-            mockWebServer!!.enqueue(
+            mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(429)
                     .setHeader("Retry-After", "3"),
@@ -332,7 +325,7 @@ class OfrepProviderTest {
                 OfrepProvider(
                     OfrepOptions(
                         pollingIntervalInMillis = 100,
-                        endpoint = mockWebServer?.url("/").toString(),
+                        endpoint = mockWebServer.url("/").toString(),
                     ),
                 )
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
@@ -340,14 +333,14 @@ class OfrepProviderTest {
             client.getStringDetails("my-other-flag", "default")
             client.getStringDetails("my-other-flag", "default")
             Thread.sleep(2000) // we wait 2 seconds to let the polling loop run
-            assertEquals(1, mockWebServer!!.requestCount)
+            assertEquals(1, mockWebServer.requestCount)
         }
 
     @Test
     fun `should return a valid evaluation for Boolean`(): Unit =
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getBooleanDetails("bool-flag", false)
@@ -374,7 +367,7 @@ class OfrepProviderTest {
     fun `should return a valid evaluation for Int`(): Unit =
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getIntegerDetails("int-flag", 1)
@@ -401,7 +394,7 @@ class OfrepProviderTest {
     fun `should return a valid evaluation for Double`(): Unit =
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getDoubleDetails("double-flag", 1.1)
@@ -428,7 +421,7 @@ class OfrepProviderTest {
     fun `should return a valid evaluation for String`(): Unit =
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getStringDetails("string-flag", "default")
@@ -455,7 +448,7 @@ class OfrepProviderTest {
     fun `should return a valid evaluation for List`(): Unit =
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got =
@@ -487,7 +480,7 @@ class OfrepProviderTest {
     fun `should return a valid evaluation for Map`(): Unit =
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got =
@@ -533,7 +526,7 @@ class OfrepProviderTest {
     fun `should return TypeMismatch Bool`(): Unit =
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getBooleanDetails("object-flag", false)
@@ -553,7 +546,7 @@ class OfrepProviderTest {
     fun `should return TypeMismatch String`(): Unit =
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getStringDetails("object-flag", "default")
@@ -573,7 +566,7 @@ class OfrepProviderTest {
     fun `should return TypeMismatch Double`(): Unit =
         runTest {
             enqueueMockResponse("ofrep/valid_api_response.json", 200)
-            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer?.url("/").toString()))
+            val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
             val client = OpenFeatureAPI.getClient()
             val got = client.getDoubleDetails("object-flag", 1.233)
@@ -605,7 +598,7 @@ class OfrepProviderTest {
                 OfrepProvider(
                     OfrepOptions(
                         pollingIntervalInMillis = 100,
-                        endpoint = mockWebServer?.url("/").toString(),
+                        endpoint = mockWebServer.url("/").toString(),
                     ),
                 )
             OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
@@ -648,6 +641,6 @@ class OfrepProviderTest {
         if (headers != null) {
             resp = resp.setHeaders(headers)
         }
-        mockWebServer!!.enqueue(resp)
+        mockWebServer.enqueue(resp)
     }
 }
