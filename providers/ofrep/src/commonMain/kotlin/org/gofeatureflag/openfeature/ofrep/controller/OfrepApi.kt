@@ -48,7 +48,7 @@ class OfrepApi(
     /**
      * Call the OFREP API to evaluate in bulk the flags for the given context.
      */
-    suspend fun postBulkEvaluateFlags(context: EvaluationContext?): PostBulkEvaluationResult {
+    fun postBulkEvaluateFlags(context: EvaluationContext?): PostBulkEvaluationResult {
         val nonNullContext =
             context ?: throw OpenFeatureError.InvalidContextError("EvaluationContext is null")
         validateContext(nonNullContext)

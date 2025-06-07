@@ -190,7 +190,7 @@ class OfrepProvider(
      * Evaluate the flags for the given context.
      * It will store the flags in the in-memory cache, if any error occurs it will throw an exception.
      */
-    private suspend fun evaluateFlags(context: EvaluationContext): BulkEvaluationStatus {
+    private fun evaluateFlags(context: EvaluationContext): BulkEvaluationStatus {
         if (this.retryAfter != null && this.retryAfter!! > Date()) {
             return BulkEvaluationStatus.RATE_LIMITED
         }
