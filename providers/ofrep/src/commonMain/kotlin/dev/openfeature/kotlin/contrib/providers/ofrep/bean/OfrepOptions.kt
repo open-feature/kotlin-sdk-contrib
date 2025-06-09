@@ -1,6 +1,5 @@
 package dev.openfeature.kotlin.contrib.providers.ofrep.bean
 
-import okhttp3.Headers
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -35,7 +34,7 @@ data class OfrepOptions(
      * Headers to add to the OFREP calls
      * Default: empty
      */
-    val headers: Headers? = null,
+    val headers: Map<String, String> = emptyMap(),
     /**
      * Polling interval to refresh the flags
      * Default: `5.minutes`

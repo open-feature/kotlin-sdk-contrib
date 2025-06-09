@@ -1,169 +1,69 @@
 @file:OptIn(ExperimentalTime::class)
 
+package dev.openfeature.kotlin.contrib.providers.ofrep.bean
+
+import dev.openfeature.kotlin.contrib.providers.ofrep.serialization.EvaluationMetadataSerializer
+import dev.openfeature.kotlin.contrib.providers.ofrep.serialization.ValueSerializer
 import dev.openfeature.sdk.EvaluationMetadata
 import dev.openfeature.sdk.ProviderEvaluation
 import dev.openfeature.sdk.Value
 import dev.openfeature.sdk.exceptions.ErrorCode
 import dev.openfeature.sdk.exceptions.OpenFeatureError
-import kotlin.reflect.KClass
+import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-data class OfrepApiResponse(
+@Serializable
+internal data class OfrepApiResponse(
     val flags: List<FlagDto>? = null,
-    val errorCode: ErrorCode?,
-    val errorDetails: String?,
+    val errorCode: ErrorCode? = null,
+    val errorDetails: String? = null,
 )
 
-data class FlagDto(
-    val value: Any,
+@Serializable
+internal data class FlagDto(
+    @Serializable(with = ValueSerializer::class)
+    val value: Value? = null,
     val key: String,
-    val reason: String,
-    val variant: String,
-    val errorCode: ErrorCode?,
-    val errorDetails: String?,
-    val metadata: Map<String, Any>? = emptyMap(),
+    val reason: String? = null,
+    val variant: String? = null,
+    val errorCode: ErrorCode? = null,
+    val errorDetails: String? = null,
+    @Serializable(with = EvaluationMetadataSerializer::class)
+    val metadata: EvaluationMetadata = EvaluationMetadata.EMPTY,
 ) {
     fun isError(): Boolean = errorCode != null
+}
 
-    fun <T : Any> toProviderEvaluation(expectedType: KClass<*>): ProviderEvaluation<T> {
-        if (!expectedType.isInstance(value)) {
-            val isSpecialCase =
-                expectedType == Int::class && value is Long && value.toInt().toLong() == value
-            if (!isSpecialCase) {
-                throw OpenFeatureError.TypeMismatchError("Type mismatch: expect ${expectedType.simpleName} - Unsupported type for: $value")
-            }
+@OptIn(ExperimentalTime::class)
+inline fun <reified T> Value.toPrimitive(): T {
+    val value: T? =
+        when (T::class) {
+            Boolean::class -> asBoolean() as T?
+            String::class -> asString() as T?
+            Int::class -> asInteger() as T?
+            Double::class ->
+                // doubles might have been serialized as integers
+                (asDouble() ?: asInteger()?.toDouble()) as T?
+
+            Instant::class ->
+                // Instants might have been serialized as a string
+                (asInstant() ?: asString()?.let { Instant.parse(it) }) as T?
+            else -> error("toPrimitive not implemented for ${T::class}")
         }
+    return value ?: throw OpenFeatureError.TypeMismatchError(
+        "Type mismatch: expect ${T::class.simpleName} - Unsupported type for: $this",
+    )
+}
 
-        if (expectedType == Int::class) {
-            val typedValue = (value as Long).toInt()
-            return ProviderEvaluation(
-                value = typedValue as T,
-                reason = reason,
-                variant = variant,
-                errorCode = errorCode,
-                errorMessage = errorDetails,
-                metadata = convertMetadata(metadata),
-            )
-        }
-
-        if (expectedType == Object::class) {
-            if (value is List<*>) {
-                val typedValue = Value.List(convertList(value as List<Any>))
-                return ProviderEvaluation(
-                    value = typedValue as T,
-                    reason = reason,
-                    variant = variant,
-                    errorCode = errorCode,
-                    errorMessage = errorDetails,
-                    metadata = convertMetadata(metadata),
-                )
-            } else if (value is Map<*, *>) {
-                val typedValue = convertObjectToStructure(value)
-                return ProviderEvaluation(
-                    value = typedValue as T,
-                    reason = reason,
-                    variant = variant,
-                    errorCode = errorCode,
-                    errorMessage = errorDetails,
-                    metadata = convertMetadata(metadata),
-                )
-            } else {
-                throw IllegalArgumentException("Unsupported type for: $value")
-            }
-        }
-
-        @Suppress("unchecked_cast")
-        return ProviderEvaluation(
-            value = value as T,
-            reason = reason,
-            variant = variant,
-            errorCode = errorCode,
-            errorMessage = errorDetails,
-            metadata = convertMetadata(metadata),
-        )
-    }
-
-    private fun convertMetadata(inputMap: Map<String, Any>?): EvaluationMetadata {
-        // check that inputMap is null or empty
-        if (inputMap.isNullOrEmpty()) {
-            return EvaluationMetadata.EMPTY
-        }
-
-        val metadataBuilder = EvaluationMetadata.builder()
-        inputMap.forEach { entry ->
-            // switch case on entry.value types
-            when (entry.value) {
-                is String -> {
-                    metadataBuilder.putString(entry.key, entry.value as String)
-                }
-
-                is Boolean -> {
-                    metadataBuilder.putBoolean(entry.key, entry.value as Boolean)
-                }
-
-                is Int -> {
-                    metadataBuilder.putInt(entry.key, entry.value as Int)
-                }
-
-                is Long -> {
-                    metadataBuilder.putInt(entry.key, (entry.value as Long).toInt())
-                }
-
-                is Double -> {
-                    metadataBuilder.putDouble(entry.key, entry.value as Double)
-                }
-            }
-        }
-
-        return metadataBuilder.build()
-    }
-
-    private fun convertList(inputList: List<*>): List<Value> =
-        inputList.map { item ->
-            when (item) {
-                is String -> Value.String(item)
-                is Boolean -> Value.Boolean(item)
-                is Long -> Value.Integer(item.toInt())
-                is Double -> Value.Double(item)
-                is Instant -> Value.Instant(item)
-                is Map<*, *> -> {
-                    @Suppress("unchecked_cast")
-                    Value.Structure(item as Map<String, Value>)
-                }
-
-                is List<*> -> {
-                    @Suppress("unchecked_cast")
-                    Value.List(convertList(item as List<Any>))
-                }
-
-                else -> throw IllegalArgumentException(
-                    "Unsupported type for: $item",
-                )
-            }
-        }
-
-    private fun convertObjectToStructure(obj: Any): Value.Structure {
-        if (obj !is Map<*, *>) {
-            throw IllegalArgumentException("Object must be a Map")
-        }
-        val convertedMap =
-            obj.entries.associate { (key, value) ->
-                if (key !is String) {
-                    throw IllegalArgumentException("Map key must be a String")
-                }
-                key to
-                    when (value) {
-                        is String -> Value.String(value)
-                        is Boolean -> Value.Boolean(value)
-                        is Long -> Value.Integer(value.toInt())
-                        is Double -> Value.Double(value)
-                        is Instant -> Value.Instant(value)
-                        is Map<*, *> -> convertObjectToStructure(value)
-                        is List<*> -> Value.List(convertList(value as List<Any>))
-                        else -> throw IllegalArgumentException("Unsupported type for: $value")
-                    }
-            }
-        return Value.Structure(convertedMap)
-    }
+internal inline fun <reified T> FlagDto.toProviderEvaluation(default: T): ProviderEvaluation<T> {
+    val convertedValue: T? = if (T::class == Value::class) value as T else value?.toPrimitive()
+    return ProviderEvaluation(
+        value = convertedValue ?: default,
+        reason = reason,
+        variant = variant,
+        errorCode = errorCode,
+        errorMessage = errorDetails,
+        metadata = metadata,
+    )
 }

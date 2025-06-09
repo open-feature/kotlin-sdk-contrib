@@ -1,20 +1,22 @@
 package dev.openfeature.kotlin.contrib.providers.ofrep.error
 
-sealed class OfrepError : Exception() {
+import io.ktor.client.statement.HttpResponse
+
+internal sealed class OfrepError : Exception() {
     class ApiUnauthorizedError(
-        val response: okhttp3.Response,
+        val response: HttpResponse,
     ) : OfrepError()
 
     class ForbiddenError(
-        val response: okhttp3.Response,
+        val response: HttpResponse,
     ) : OfrepError()
 
     class ApiTooManyRequestsError(
-        val response: okhttp3.Response? = null,
+        val response: HttpResponse? = null,
     ) : OfrepError()
 
     class UnexpectedResponseError(
-        val response: okhttp3.Response,
+        val response: HttpResponse,
     ) : OfrepError()
 
     class UnmarshallError(

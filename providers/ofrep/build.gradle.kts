@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    id("com.android.library") version "8.10.1"
+    alias(libs.plugins.kotlinx.serialization)
+    alias(libs.plugins.android.library)
 }
 
 kotlin {
@@ -15,9 +16,10 @@ kotlin {
             api(libs.openfeature.kotlin.sdk)
 
             api(libs.kotlinx.coroutines.core)
-            api(libs.okhttp)
-            // TODO: replace with multiplatform JSON library
-            api("com.google.code.gson:gson:2.12.1")
+            implementation(libs.ktor.core)
+            implementation(libs.ktor.cio)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

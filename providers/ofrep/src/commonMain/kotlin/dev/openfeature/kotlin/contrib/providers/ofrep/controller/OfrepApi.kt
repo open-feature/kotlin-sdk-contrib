@@ -1,105 +1,96 @@
 package dev.openfeature.kotlin.contrib.providers.ofrep.controller
 
-import OfrepApiRequest
-import OfrepApiResponse
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonSyntaxException
-import com.google.gson.ToNumberPolicy
+import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepApiRequest
+import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepApiResponse
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.PostBulkEvaluationResult
 import dev.openfeature.kotlin.contrib.providers.ofrep.error.OfrepError
 import dev.openfeature.sdk.EvaluationContext
 import dev.openfeature.sdk.exceptions.OpenFeatureError
-import okhttp3.ConnectionPool
-import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.OkHttpClient
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.util.concurrent.TimeUnit
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.engine.cio.endpoint
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.headers
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.Url
+import io.ktor.http.appendPathSegments
+import io.ktor.http.contentType
+import io.ktor.http.parseUrl
+import io.ktor.serialization.JsonConvertException
+import io.ktor.serialization.kotlinx.json.json
 
-class OfrepApi(
+private fun createHttpClient(options: OfrepOptions): HttpClient =
+    HttpClient(CIO) {
+        install(ContentNegotiation) {
+            json()
+        }
+        engine {
+            maxConnectionsCount = options.maxIdleConnections
+            endpoint {
+                keepAliveTime = options.keepAliveDuration.inWholeMilliseconds
+                connectTimeout = options.timeout.inWholeMilliseconds
+            }
+        }
+    }
+
+internal class OfrepApi(
     private val options: OfrepOptions,
 ) {
-    companion object {
-        private val gson =
-            GsonBuilder().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create()
-    }
-
-    private val httpClient: OkHttpClient
-    private var parsedEndpoint: HttpUrl =
-        options.endpoint.toHttpUrlOrNull()
-            ?: throw OfrepError.InvalidOptionsError("invalid endpoint configuration: ${options.endpoint}")
+    private val httpClient: HttpClient = createHttpClient(options)
+    private var parsedEndpoint: Url =
+        parseUrl(options.endpoint) ?: throw OfrepError.InvalidOptionsError("invalid endpoint configuration: ${options.endpoint}")
     private var etag: String? = null
-
-    init {
-        val timeoutInMilliseconds = options.timeout.inWholeMilliseconds
-        httpClient =
-            OkHttpClient
-                .Builder()
-                .connectTimeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS)
-                .readTimeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS)
-                .callTimeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS)
-                .writeTimeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS)
-                .connectionPool(
-                    ConnectionPool(
-                        options.maxIdleConnections,
-                        options.keepAliveDuration.inWholeMilliseconds,
-                        TimeUnit.MILLISECONDS,
-                    ),
-                ).build()
-    }
 
     /**
      * Call the OFREP API to evaluate in bulk the flags for the given context.
      */
-    fun postBulkEvaluateFlags(context: EvaluationContext?): PostBulkEvaluationResult {
+    internal suspend fun postBulkEvaluateFlags(context: EvaluationContext?): PostBulkEvaluationResult {
         val nonNullContext =
             context ?: throw OpenFeatureError.InvalidContextError("EvaluationContext is null")
         validateContext(nonNullContext)
 
-        val urlBuilder =
-            parsedEndpoint
-                .newBuilder()
-                .addEncodedPathSegment("ofrep")
-                .addEncodedPathSegment("v1")
-                .addEncodedPathSegment("evaluate")
-                .addEncodedPathSegment("flags")
-
-        val mediaType = "application/json".toMediaTypeOrNull()
-        val requestBody = gson.toJson(OfrepApiRequest(nonNullContext)).toRequestBody(mediaType)
-        val reqBuilder =
-            okhttp3.Request
-                .Builder()
-                .url(urlBuilder.build())
-                .post(requestBody)
-
-        // add all the headers
-        options.headers?.let { reqBuilder.headers(it) }
-        etag?.let { reqBuilder.addHeader("If-None-Match", it) }
-        httpClient.newCall(reqBuilder.build()).execute().use { response ->
-            when (response.code) {
-                401 -> throw OfrepError.ApiUnauthorizedError(response)
-                403 -> throw OfrepError.ForbiddenError(response)
-                429 -> throw OfrepError.ApiTooManyRequestsError(response)
-                304 -> return PostBulkEvaluationResult(null, response)
-                in 200..299, 400 -> {
-                    try {
-                        response.headers["ETag"].let { this.etag = it }
-                        val ofrepResp =
-                            gson.fromJson(response.body?.string(), OfrepApiResponse::class.java)
-                        return PostBulkEvaluationResult(ofrepResp, response)
-                    } catch (e: JsonSyntaxException) {
-                        throw OfrepError.UnmarshallError(e)
-                    } catch (e: Exception) {
-                        println(e)
-                        throw OfrepError.UnexpectedResponseError(response)
+        val response =
+            httpClient.post(parsedEndpoint) {
+                url {
+                    appendPathSegments("ofrep", "v1", "evaluate", "flags")
+                }
+                contentType(ContentType.Application.Json)
+                headers {
+                    options.headers.forEach {
+                        append(it.key, it.value)
+                    }
+                    etag?.let {
+                        append(HttpHeaders.IfNoneMatch, it)
                     }
                 }
+                setBody(OfrepApiRequest(nonNullContext))
+            }
 
-                else -> {
+        when (response.status.value) {
+            401 -> throw OfrepError.ApiUnauthorizedError(response)
+            403 -> throw OfrepError.ForbiddenError(response)
+            429 -> throw OfrepError.ApiTooManyRequestsError(response)
+            304 -> return PostBulkEvaluationResult(null, response)
+            in 200..299, 400 -> {
+                try {
+                    response.headers[HttpHeaders.ETag].let { this.etag = it }
+                    val ofrepResp: OfrepApiResponse? = response.body()
+                    return PostBulkEvaluationResult(ofrepResp, response)
+                } catch (e: JsonConvertException) {
+                    throw OfrepError.UnmarshallError(e)
+                } catch (e: Exception) {
+                    println(e)
                     throw OfrepError.UnexpectedResponseError(response)
                 }
+            }
+
+            else -> {
+                throw OfrepError.UnexpectedResponseError(response)
             }
         }
     }

@@ -1,8 +1,9 @@
 package dev.openfeature.kotlin.contrib.providers.ofrep
 
-import FlagDto
+import dev.openfeature.kotlin.contrib.providers.ofrep.bean.FlagDto
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepProviderMetadata
+import dev.openfeature.kotlin.contrib.providers.ofrep.bean.toProviderEvaluation
 import dev.openfeature.kotlin.contrib.providers.ofrep.controller.OfrepApi
 import dev.openfeature.kotlin.contrib.providers.ofrep.enum.BulkEvaluationStatus
 import dev.openfeature.kotlin.contrib.providers.ofrep.error.OfrepError
@@ -26,7 +27,6 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.Timer
 import java.util.TimerTask
-import kotlin.reflect.KClass
 
 class OfrepProvider(
     private val ofrepOptions: OfrepOptions,
@@ -116,31 +116,31 @@ class OfrepProvider(
         key: String,
         defaultValue: Boolean,
         context: EvaluationContext?,
-    ): ProviderEvaluation<Boolean> = genericEvaluation<Boolean>(key, Boolean::class)
+    ): ProviderEvaluation<Boolean> = genericEvaluation(key, defaultValue)
 
     override fun getDoubleEvaluation(
         key: String,
         defaultValue: Double,
         context: EvaluationContext?,
-    ): ProviderEvaluation<Double> = genericEvaluation<Double>(key, Double::class)
+    ): ProviderEvaluation<Double> = genericEvaluation(key, defaultValue)
 
     override fun getIntegerEvaluation(
         key: String,
         defaultValue: Int,
         context: EvaluationContext?,
-    ): ProviderEvaluation<Int> = genericEvaluation<Int>(key, Int::class)
+    ): ProviderEvaluation<Int> = genericEvaluation(key, defaultValue)
 
     override fun getObjectEvaluation(
         key: String,
         defaultValue: Value,
         context: EvaluationContext?,
-    ): ProviderEvaluation<Value> = genericEvaluation<Value>(key, Object::class)
+    ): ProviderEvaluation<Value> = genericEvaluation(key, defaultValue)
 
     override fun getStringEvaluation(
         key: String,
         defaultValue: String,
         context: EvaluationContext?,
-    ): ProviderEvaluation<String> = genericEvaluation<String>(key, String::class)
+    ): ProviderEvaluation<String> = genericEvaluation(key, defaultValue)
 
     override suspend fun onContextSet(
         oldContext: EvaluationContext?,
@@ -165,9 +165,9 @@ class OfrepProvider(
         this.pollingTimer?.cancel()
     }
 
-    private fun <T : Any> genericEvaluation(
+    private inline fun <reified T> genericEvaluation(
         key: String,
-        expectedType: KClass<*>,
+        defaultValue: T,
     ): ProviderEvaluation<T> {
         val flag = this.inMemoryCache[key] ?: throw OpenFeatureError.FlagNotFoundError(key)
 
@@ -184,14 +184,14 @@ class OfrepProvider(
                 else -> throw OpenFeatureError.GeneralError(flag.errorDetails ?: "general error")
             }
         }
-        return flag.toProviderEvaluation(expectedType)
+        return flag.toProviderEvaluation(defaultValue)
     }
 
     /**
      * Evaluate the flags for the given context.
      * It will store the flags in the in-memory cache, if any error occurs it will throw an exception.
      */
-    private fun evaluateFlags(context: EvaluationContext): BulkEvaluationStatus {
+    private suspend fun evaluateFlags(context: EvaluationContext): BulkEvaluationStatus {
         if (this.retryAfter != null && this.retryAfter!! > Date()) {
             return BulkEvaluationStatus.RATE_LIMITED
         }
@@ -202,7 +202,7 @@ class OfrepProvider(
             val ofrepEvalResp = postBulkEvaluateFlags.apiResponse
             val httpResp = postBulkEvaluateFlags.httpResponse
 
-            if (httpResp.code == 304) {
+            if (httpResp.status.value == 304) {
                 return BulkEvaluationStatus.SUCCESS_NO_CHANGE
             }
 

@@ -1,7 +1,12 @@
-import dev.openfeature.sdk.EvaluationContext
+package dev.openfeature.kotlin.contrib.providers.ofrep.bean
 
-data class OfrepApiRequest(
-    @Transient val ctx: EvaluationContext,
-) {
-    private val context: Map<String, Any?> = ctx.asObjectMap().plus("targetingKey" to ctx.getTargetingKey())
-}
+import dev.openfeature.kotlin.contrib.providers.ofrep.serialization.EvaluationContextSerializer
+import dev.openfeature.sdk.EvaluationContext
+import dev.openfeature.sdk.ImmutableContext
+import kotlinx.serialization.Serializable
+
+@Serializable
+internal data class OfrepApiRequest(
+    @Serializable(with = EvaluationContextSerializer::class)
+    val ctx: EvaluationContext = ImmutableContext(),
+)

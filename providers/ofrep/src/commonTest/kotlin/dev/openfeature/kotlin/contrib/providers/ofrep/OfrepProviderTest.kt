@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import okhttp3.Headers
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -91,7 +90,7 @@ class OfrepProviderTest {
             enqueueMockResponse(
                 "ofrep/valid_api_response.json",
                 429,
-                Headers.headersOf("Retry-After", "3"),
+                mapOf("Retry-After" to "3"),
             )
 
             val provider = OfrepProvider(OfrepOptions(endpoint = mockWebServer.url("/").toString()))
@@ -538,7 +537,9 @@ class OfrepProviderTest {
                     variant = null,
                     reason = "ERROR",
                     errorCode = ErrorCode.TYPE_MISMATCH,
-                    errorMessage = "Type mismatch: expect Boolean - Unsupported type for: {testValue={toto=1234}}",
+                    errorMessage =
+                        "Type mismatch: expect Boolean - Unsupported type for: " +
+                            "Structure(structure={testValue=Structure(structure={toto=Integer(integer=1234)})})",
                 )
             assertEquals(want, got)
         }
@@ -558,7 +559,9 @@ class OfrepProviderTest {
                     variant = null,
                     reason = "ERROR",
                     errorCode = ErrorCode.TYPE_MISMATCH,
-                    errorMessage = "Type mismatch: expect String - Unsupported type for: {testValue={toto=1234}}",
+                    errorMessage =
+                        "Type mismatch: expect String - Unsupported type for: " +
+                            "Structure(structure={testValue=Structure(structure={toto=Integer(integer=1234)})})",
                 )
             assertEquals(want, got)
         }
@@ -578,7 +581,9 @@ class OfrepProviderTest {
                     variant = null,
                     reason = "ERROR",
                     errorCode = ErrorCode.TYPE_MISMATCH,
-                    errorMessage = "Type mismatch: expect Double - Unsupported type for: {testValue={toto=1234}}",
+                    errorMessage =
+                        "Type mismatch: expect Double - Unsupported type for: " +
+                            "Structure(structure={testValue=Structure(structure={toto=Integer(integer=1234)})})",
                 )
             assertEquals(want, got)
         }
@@ -632,16 +637,15 @@ class OfrepProviderTest {
     private fun enqueueMockResponse(
         fileName: String,
         responseCode: Int = 200,
-        headers: Headers? = null,
+        headers: Map<String, String> = emptyMap(),
     ) {
         val jsonString = getResourceAsString(fileName)
-        var resp =
+        val resp =
             MockResponse()
                 .setBody(jsonString.trimIndent())
                 .setResponseCode(responseCode)
-        if (headers != null) {
-            resp = resp.setHeaders(headers)
-        }
+                .addHeader("Content-Type", "application/json")
+        headers.forEach { (key, value) -> resp.addHeader(key, value) }
         mockWebServer.enqueue(resp)
     }
 }
