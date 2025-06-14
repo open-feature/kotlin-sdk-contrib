@@ -1,5 +1,7 @@
 package dev.openfeature.kotlin.contrib.providers.ofrep.bean
 
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -40,4 +42,9 @@ data class OfrepOptions(
      * Default: `5.minutes`
      */
     val pollingInterval: Duration = 5.minutes,
+    /**
+     * Overrides the [HttpClientEngine] that is used to create the [HttpClient] for making HTTP
+     * requests.
+     */
+    val httpClientEngine: HttpClientEngine? = null,
 )

@@ -23,15 +23,16 @@ kotlin {
             api(libs.openfeature.kotlin.sdk)
 
             api(libs.kotlinx.coroutines.core)
-            implementation(libs.ktor.core)
+            api(libs.ktor.core)
             implementation(libs.ktor.cio)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.okio)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
-            implementation(libs.okhttp.mockwebserver)
+            implementation(libs.ktor.client.mock)
         }
     }
 }

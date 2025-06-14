@@ -4,14 +4,12 @@ import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepApiRequest
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepApiResponse
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.PostBulkEvaluationResult
+import dev.openfeature.kotlin.contrib.providers.ofrep.bean.createHttpClient
 import dev.openfeature.kotlin.contrib.providers.ofrep.error.OfrepError
 import dev.openfeature.kotlin.sdk.EvaluationContext
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.engine.cio.endpoint
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -22,21 +20,6 @@ import io.ktor.http.appendPathSegments
 import io.ktor.http.contentType
 import io.ktor.http.parseUrl
 import io.ktor.serialization.JsonConvertException
-import io.ktor.serialization.kotlinx.json.json
-
-private fun createHttpClient(options: OfrepOptions): HttpClient =
-    HttpClient(CIO) {
-        install(ContentNegotiation) {
-            json()
-        }
-        engine {
-            maxConnectionsCount = options.maxIdleConnections
-            endpoint {
-                keepAliveTime = options.keepAliveDuration.inWholeMilliseconds
-                connectTimeout = options.timeout.inWholeMilliseconds
-            }
-        }
-    }
 
 internal class OfrepApi(
     private val options: OfrepOptions,
