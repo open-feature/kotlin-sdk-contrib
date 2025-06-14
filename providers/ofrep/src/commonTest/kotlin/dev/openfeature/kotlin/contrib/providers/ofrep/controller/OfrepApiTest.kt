@@ -17,12 +17,13 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import junit.framework.TestCase.assertFalse
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import kotlin.test.fail
 
 private fun createOfrepApi(mockEngine: MockEngine) =
     OfrepApi(
@@ -104,7 +105,7 @@ class OfrepApiTest {
                 )
             val ofrepApi = createOfrepApi(mockEngine)
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
-            assertThrows(OfrepError.ApiUnauthorizedError::class.java) {
+            assertFailsWith<OfrepError.ApiUnauthorizedError> {
                 runBlocking {
                     ofrepApi.postBulkEvaluateFlags(ctx)
                 }
@@ -121,7 +122,7 @@ class OfrepApiTest {
                 )
             val ofrepApi = createOfrepApi(mockEngine)
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
-            assertThrows(OfrepError.ForbiddenError::class.java) {
+            assertFailsWith<OfrepError.ForbiddenError> {
                 runBlocking {
                     ofrepApi.postBulkEvaluateFlags(ctx)
                 }
@@ -141,7 +142,7 @@ class OfrepApiTest {
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
             try {
                 ofrepApi.postBulkEvaluateFlags(ctx)
-                assertTrue("we exited the try block without throwing an exception", false)
+                fail("we exited the try block without throwing an exception")
             } catch (e: OfrepError.ApiTooManyRequestsError) {
                 assertEquals(429, e.response?.status?.value)
                 assertEquals(e.response?.headers?.get("Retry-After"), "120")
@@ -159,7 +160,7 @@ class OfrepApiTest {
             val ofrepApi = createOfrepApi(mockEngine)
 
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
-            assertThrows(OfrepError.UnexpectedResponseError::class.java) {
+            assertFailsWith<OfrepError.UnexpectedResponseError> {
                 runBlocking {
                     ofrepApi.postBulkEvaluateFlags(ctx)
                 }
@@ -216,7 +217,7 @@ class OfrepApiTest {
             val ofrepApi = createOfrepApi(mockEngine)
 
             val ctx = ImmutableContext(targetingKey = "")
-            assertThrows(OpenFeatureError.TargetingKeyMissingError::class.java) {
+            assertFailsWith<OpenFeatureError.TargetingKeyMissingError> {
                 runBlocking {
                     ofrepApi.postBulkEvaluateFlags(ctx)
                 }
@@ -236,7 +237,7 @@ class OfrepApiTest {
             val ofrepApi = createOfrepApi(mockEngine)
 
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
-            assertThrows(OfrepError.UnmarshallError::class.java) {
+            assertFailsWith<OfrepError.UnmarshallError> {
                 runBlocking {
                     ofrepApi.postBulkEvaluateFlags(ctx)
                 }
@@ -246,7 +247,7 @@ class OfrepApiTest {
     @Test
     fun shouldThrowWithInvalidOptions(): Unit =
         runBlocking {
-            assertThrows(OfrepError.InvalidOptionsError::class.java) {
+            assertFailsWith<OfrepError.InvalidOptionsError> {
                 runBlocking {
                     OfrepApi(OfrepOptions(endpoint = "invalid_url"))
                 }

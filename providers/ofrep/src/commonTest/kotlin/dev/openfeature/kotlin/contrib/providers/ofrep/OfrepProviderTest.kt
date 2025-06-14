@@ -23,10 +23,10 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Test
 import java.util.UUID
+import kotlin.test.AfterTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
 
 private fun createOfrepProvider(mockEngine: MockEngine) =
@@ -38,7 +38,7 @@ class OfrepProviderTest {
     private val defaultEvalCtx: EvaluationContext =
         ImmutableContext(targetingKey = UUID.randomUUID().toString())
 
-    @After
+    @AfterTest
     fun after() =
         runTest {
             OpenFeatureAPI.shutdown()
