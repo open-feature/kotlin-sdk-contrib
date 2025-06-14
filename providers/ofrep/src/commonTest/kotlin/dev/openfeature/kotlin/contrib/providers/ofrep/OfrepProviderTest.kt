@@ -23,20 +23,22 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import java.util.UUID
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 private fun createOfrepProvider(mockEngine: MockEngine) =
     OfrepProvider(
         OfrepOptions(endpoint = FAKE_ENDPOINT, httpClientEngine = mockEngine),
     )
 
+@OptIn(ExperimentalUuidApi::class)
 class OfrepProviderTest {
     private val defaultEvalCtx: EvaluationContext =
-        ImmutableContext(targetingKey = UUID.randomUUID().toString())
+        ImmutableContext(targetingKey = Uuid.random().toHexString())
 
     @AfterTest
     fun after() =
@@ -311,7 +313,7 @@ class OfrepProviderTest {
             }
             runCurrent()
             Thread.sleep(1000) // waiting to be sure that setEvaluationContext has been processed
-            val newEvalCtx = ImmutableContext(targetingKey = UUID.randomUUID().toString())
+            val newEvalCtx = ImmutableContext(targetingKey = Uuid.random().toHexString())
             OpenFeatureAPI.setEvaluationContext(newEvalCtx)
             Thread.sleep(1000) // waiting to be sure that setEvaluationContext has been processed
             runCurrent()
