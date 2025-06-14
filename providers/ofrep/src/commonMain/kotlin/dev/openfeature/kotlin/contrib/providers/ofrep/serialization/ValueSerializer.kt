@@ -1,7 +1,7 @@
 
 package dev.openfeature.kotlin.contrib.providers.ofrep.serialization
 
-import dev.openfeature.sdk.Value
+import dev.openfeature.kotlin.sdk.Value
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
@@ -31,11 +31,11 @@ import kotlin.time.Instant
 internal object ValueSerializer : KSerializer<Value> {
     @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
     override val descriptor: SerialDescriptor =
-        buildSerialDescriptor("dev.openfeature.sdk.Value", PolymorphicKind.SEALED)
+        buildSerialDescriptor("dev.openfeature.kotlin.sdk.Value", PolymorphicKind.SEALED)
 
     // Serializers for the concrete types
     private object BooleanValueSerializer : KSerializer<Value.Boolean> {
-        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.sdk.Value.Boolean")
+        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.kotlin.sdk.Value.Boolean")
 
         override fun serialize(
             encoder: Encoder,
@@ -46,7 +46,7 @@ internal object ValueSerializer : KSerializer<Value> {
     }
 
     private object DoubleValueSerializer : KSerializer<Value.Double> {
-        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.sdk.Value.Double")
+        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.kotlin.sdk.Value.Double")
 
         override fun serialize(
             encoder: Encoder,
@@ -57,7 +57,7 @@ internal object ValueSerializer : KSerializer<Value> {
     }
 
     private object IntValueSerializer : KSerializer<Value.Integer> {
-        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.sdk.Value.Integer")
+        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.kotlin.sdk.Value.Integer")
 
         override fun serialize(
             encoder: Encoder,
@@ -69,7 +69,7 @@ internal object ValueSerializer : KSerializer<Value> {
 
     @OptIn(ExperimentalTime::class)
     private object InstantValueSerializer : KSerializer<Value.Instant> {
-        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.sdk.Value.Instant")
+        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.kotlin.sdk.Value.Instant")
 
         override fun serialize(
             encoder: Encoder,
@@ -80,7 +80,7 @@ internal object ValueSerializer : KSerializer<Value> {
     }
 
     private object StringValueSerializer : KSerializer<Value.String> {
-        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.sdk.Value.String")
+        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.kotlin.sdk.Value.String")
 
         override fun serialize(
             encoder: Encoder,
@@ -118,7 +118,7 @@ internal object ValueSerializer : KSerializer<Value> {
 
     @OptIn(ExperimentalSerializationApi::class)
     private object NullValueSerializer : KSerializer<Value.Null> {
-        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.sdk.Value.Null")
+        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.kotlin.sdk.Value.Null")
 
         override fun serialize(
             encoder: Encoder,

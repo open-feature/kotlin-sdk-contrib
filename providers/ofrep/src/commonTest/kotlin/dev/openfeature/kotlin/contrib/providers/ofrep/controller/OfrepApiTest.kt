@@ -5,11 +5,11 @@ import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepApiResponse
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
 import dev.openfeature.kotlin.contrib.providers.ofrep.error.OfrepError
 import dev.openfeature.kotlin.contrib.providers.ofrep.getResourceAsString
-import dev.openfeature.sdk.EvaluationMetadata
-import dev.openfeature.sdk.ImmutableContext
-import dev.openfeature.sdk.Value
-import dev.openfeature.sdk.exceptions.ErrorCode
-import dev.openfeature.sdk.exceptions.OpenFeatureError
+import dev.openfeature.kotlin.sdk.EvaluationMetadata
+import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.Value
+import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
+import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import junit.framework.TestCase.assertFalse
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse

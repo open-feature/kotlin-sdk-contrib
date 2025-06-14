@@ -1,6 +1,6 @@
 package dev.openfeature.kotlin.contrib.providers.ofrep.serialization
 
-import dev.openfeature.sdk.EvaluationMetadata
+import dev.openfeature.kotlin.sdk.EvaluationMetadata
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder

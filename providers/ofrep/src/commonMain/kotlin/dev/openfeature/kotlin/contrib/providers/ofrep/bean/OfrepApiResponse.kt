@@ -4,11 +4,11 @@ package dev.openfeature.kotlin.contrib.providers.ofrep.bean
 
 import dev.openfeature.kotlin.contrib.providers.ofrep.serialization.EvaluationMetadataSerializer
 import dev.openfeature.kotlin.contrib.providers.ofrep.serialization.ValueSerializer
-import dev.openfeature.sdk.EvaluationMetadata
-import dev.openfeature.sdk.ProviderEvaluation
-import dev.openfeature.sdk.Value
-import dev.openfeature.sdk.exceptions.ErrorCode
-import dev.openfeature.sdk.exceptions.OpenFeatureError
+import dev.openfeature.kotlin.sdk.EvaluationMetadata
+import dev.openfeature.kotlin.sdk.ProviderEvaluation
+import dev.openfeature.kotlin.sdk.Value
+import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
+import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant

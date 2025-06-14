@@ -2,7 +2,7 @@
 kotlin = "2.1.21"
 kotlinx-coroutines = "1.10.2"
 okhttp = "4.12.0"
-open-feature-kotlin-sdk = "0.4.1"
+open-feature-kotlin-sdk = "0.5.0"
 android = "8.10.1"
 ktor = "3.1.3"
 

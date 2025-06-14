@@ -3,15 +3,15 @@
 package dev.openfeature.kotlin.contrib.providers.ofrep
 
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
-import dev.openfeature.sdk.EvaluationContext
-import dev.openfeature.sdk.EvaluationMetadata
-import dev.openfeature.sdk.FlagEvaluationDetails
-import dev.openfeature.sdk.ImmutableContext
-import dev.openfeature.sdk.OpenFeatureAPI
-import dev.openfeature.sdk.Value
-import dev.openfeature.sdk.events.OpenFeatureProviderEvents
-import dev.openfeature.sdk.exceptions.ErrorCode
-import dev.openfeature.sdk.exceptions.OpenFeatureError
+import dev.openfeature.kotlin.sdk.EvaluationContext
+import dev.openfeature.kotlin.sdk.EvaluationMetadata
+import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
+import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.OpenFeatureAPI
+import dev.openfeature.kotlin.sdk.Value
+import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
+import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
+import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.filterIsInstance

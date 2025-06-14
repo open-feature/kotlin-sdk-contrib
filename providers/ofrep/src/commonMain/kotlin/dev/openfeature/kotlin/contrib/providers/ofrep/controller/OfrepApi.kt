@@ -5,8 +5,8 @@ import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepApiResponse
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.PostBulkEvaluationResult
 import dev.openfeature.kotlin.contrib.providers.ofrep.error.OfrepError
-import dev.openfeature.sdk.EvaluationContext
-import dev.openfeature.sdk.exceptions.OpenFeatureError
+import dev.openfeature.kotlin.sdk.EvaluationContext
+import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
