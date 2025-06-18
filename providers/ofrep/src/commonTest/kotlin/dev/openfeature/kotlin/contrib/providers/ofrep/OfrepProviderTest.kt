@@ -3,8 +3,10 @@
 package dev.openfeature.kotlin.contrib.providers.ofrep
 
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
+import dev.openfeature.kotlin.sdk.Client
 import dev.openfeature.kotlin.sdk.EvaluationContext
 import dev.openfeature.kotlin.sdk.EvaluationMetadata
+import dev.openfeature.kotlin.sdk.FeatureProvider
 import dev.openfeature.kotlin.sdk.FlagEvaluationDetails
 import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.OpenFeatureAPI
@@ -16,6 +18,7 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.filterIsInstance
@@ -34,6 +37,21 @@ private fun createOfrepProvider(mockEngine: MockEngine) =
     OfrepProvider(
         OfrepOptions(endpoint = FAKE_ENDPOINT, httpClientEngine = mockEngine),
     )
+
+private suspend fun withClient(
+    provider: FeatureProvider,
+    initialContext: EvaluationContext,
+    dispatcher: CoroutineDispatcher,
+    body: (client: Client) -> Unit,
+) {
+    OpenFeatureAPI.setProviderAndWait(provider, initialContext, dispatcher)
+    try {
+        val client = OpenFeatureAPI.getClient()
+        body(client)
+    } finally {
+        OpenFeatureAPI.shutdown()
+    }
+}
 
 @OptIn(ExperimentalUuidApi::class)
 class OfrepProviderTest {
@@ -67,9 +85,10 @@ class OfrepProviderTest {
                 }
             }
             runCurrent()
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            runCurrent()
-            assert(providerErrorReceived) { "ProviderError event was not received" }
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                runCurrent()
+                assert(providerErrorReceived) { "ProviderError event was not received" }
+            }
         }
 
     @Test
@@ -87,9 +106,10 @@ class OfrepProviderTest {
                 }
             }
             runCurrent()
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            runCurrent()
-            assert(providerErrorReceived) { "ProviderError event was not received" }
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                runCurrent()
+                assert(providerErrorReceived) { "ProviderError event was not received" }
+            }
         }
 
     @Test
@@ -113,11 +133,12 @@ class OfrepProviderTest {
                 }
             }
             runCurrent()
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            runCurrent()
-            assert(providerErrorReceived) { "ProviderError event was not received" }
-            assert(exceptionReceived is OpenFeatureError.GeneralError) { "The exception is not of type GeneralError" }
-            assert(exceptionReceived?.message == "Rate limited") { "The exception's message is not correct" }
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                runCurrent()
+                assert(providerErrorReceived) { "ProviderError event was not received" }
+                assert(exceptionReceived is OpenFeatureError.GeneralError) { "The exception is not of type GeneralError" }
+                assert(exceptionReceived?.message == "Rate limited") { "The exception's message is not correct" }
+            }
         }
 
     @Test
@@ -137,12 +158,13 @@ class OfrepProviderTest {
             }
             runCurrent()
             val evalCtx = ImmutableContext(targetingKey = "")
-            OpenFeatureAPI.setProviderAndWait(provider, evalCtx, Dispatchers.IO)
-            runCurrent()
-            assert(providerErrorReceived) { "ProviderError event was not received" }
-            assert(
-                exceptionReceived is OpenFeatureError.TargetingKeyMissingError,
-            ) { "The exception is not of type TargetingKeyMissingError" }
+            withClient(provider, evalCtx, Dispatchers.IO) { client ->
+                runCurrent()
+                assert(providerErrorReceived) { "ProviderError event was not received" }
+                assert(
+                    exceptionReceived is OpenFeatureError.TargetingKeyMissingError,
+                ) { "The exception is not of type TargetingKeyMissingError" }
+            }
         }
 
     @Test
@@ -162,12 +184,13 @@ class OfrepProviderTest {
             }
             runCurrent()
             val evalCtx = ImmutableContext()
-            OpenFeatureAPI.setProviderAndWait(provider, evalCtx, Dispatchers.IO)
-            runCurrent()
-            assert(providerErrorReceived) { "ProviderError event was not received" }
-            assert(
-                exceptionReceived is OpenFeatureError.TargetingKeyMissingError,
-            ) { "The exception is not of type TargetingKeyMissingError" }
+            withClient(provider, evalCtx, Dispatchers.IO) { client ->
+                runCurrent()
+                assert(providerErrorReceived) { "ProviderError event was not received" }
+                assert(
+                    exceptionReceived is OpenFeatureError.TargetingKeyMissingError,
+                ) { "The exception is not of type TargetingKeyMissingError" }
+            }
         }
 
     @Test
@@ -186,10 +209,11 @@ class OfrepProviderTest {
                 }
             }
             runCurrent()
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            runCurrent()
-            assert(providerErrorReceived) { "ProviderError event was not received" }
-            assert(exceptionReceived is OpenFeatureError.InvalidContextError) { "The exception is not of type InvalidContextError" }
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                runCurrent()
+                assert(providerErrorReceived) { "ProviderError event was not received" }
+                assert(exceptionReceived is OpenFeatureError.InvalidContextError) { "The exception is not of type InvalidContextError" }
+            }
         }
 
     @Test
@@ -209,10 +233,11 @@ class OfrepProviderTest {
                 }
             }
             runCurrent()
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            runCurrent()
-            assert(providerErrorReceived) { "ProviderError event was not received" }
-            assert(exceptionReceived is OpenFeatureError.ParseError) { "The exception is not of type ParseError" }
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                runCurrent()
+                assert(providerErrorReceived) { "ProviderError event was not received" }
+                assert(exceptionReceived is OpenFeatureError.ParseError) { "The exception is not of type ParseError" }
+            }
         }
 
     @Test
@@ -220,19 +245,19 @@ class OfrepProviderTest {
         runTest {
             val mockEngine = mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got = client.getBooleanDetails("non-existent-flag", false)
-            val want =
-                FlagEvaluationDetails<Boolean>(
-                    flagKey = "non-existent-flag",
-                    value = false,
-                    variant = null,
-                    reason = "ERROR",
-                    errorCode = ErrorCode.FLAG_NOT_FOUND,
-                    errorMessage = "Could not find flag named: non-existent-flag",
-                )
-            assertEquals(want, got)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got = client.getBooleanDetails("non-existent-flag", false)
+                val want =
+                    FlagEvaluationDetails<Boolean>(
+                        flagKey = "non-existent-flag",
+                        value = false,
+                        variant = null,
+                        reason = "ERROR",
+                        errorCode = ErrorCode.FLAG_NOT_FOUND,
+                        errorMessage = "Could not find flag named: non-existent-flag",
+                    )
+                assertEquals(want, got)
+            }
         }
 
     @Test
@@ -243,25 +268,25 @@ class OfrepProviderTest {
                     getResourceAsString("ofrep/valid_api_short_response.json"),
                 )
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got = client.getStringDetails("title-flag", "default")
-            val want =
-                FlagEvaluationDetails<String>(
-                    flagKey = "title-flag",
-                    value = "GO Feature Flag",
-                    variant = "default_title",
-                    reason = "DEFAULT",
-                    errorCode = null,
-                    errorMessage = null,
-                    metadata =
-                        EvaluationMetadata
-                            .builder()
-                            .putString("description", "This flag controls the title of the feature flag")
-                            .putString("title", "Feature Flag Title")
-                            .build(),
-                )
-            assertEquals(want, got)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got = client.getStringDetails("title-flag", "default")
+                val want =
+                    FlagEvaluationDetails<String>(
+                        flagKey = "title-flag",
+                        value = "GO Feature Flag",
+                        variant = "default_title",
+                        reason = "DEFAULT",
+                        errorCode = null,
+                        errorMessage = null,
+                        metadata =
+                            EvaluationMetadata
+                                .builder()
+                                .putString("description", "This flag controls the title of the feature flag")
+                                .putString("title", "Feature Flag Title")
+                                .build(),
+                    )
+                assertEquals(want, got)
+            }
         }
 
     @Test
@@ -272,19 +297,19 @@ class OfrepProviderTest {
                     getResourceAsString("ofrep/valid_1_flag_in_parse_error.json"),
                 )
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got = client.getStringDetails("my-other-flag", "default")
-            val want =
-                FlagEvaluationDetails<String>(
-                    flagKey = "my-other-flag",
-                    value = "default",
-                    variant = null,
-                    reason = "ERROR",
-                    errorCode = ErrorCode.PARSE_ERROR,
-                    errorMessage = "Error details about PARSE_ERROR",
-                )
-            assertEquals(want, got)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got = client.getStringDetails("my-other-flag", "default")
+                val want =
+                    FlagEvaluationDetails<String>(
+                        flagKey = "my-other-flag",
+                        value = "default",
+                        variant = null,
+                        reason = "ERROR",
+                        errorCode = ErrorCode.PARSE_ERROR,
+                        errorMessage = "Error details about PARSE_ERROR",
+                    )
+                assertEquals(want, got)
+            }
         }
 
     @Test
@@ -296,29 +321,30 @@ class OfrepProviderTest {
                     secondContent = getResourceAsString("ofrep/valid_api_response_2.json"),
                 )
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
 
-            // TODO: should change when we have a way to observe context changes event
-            //       check issue https://github.com/open-feature/kotlin-sdk/issues/107
-            var providerStaleEventReceived = false
-            var providerReadyEventReceived = false
+                // TODO: should change when we have a way to observe context changes event
+                //       check issue https://github.com/open-feature/kotlin-sdk/issues/107
+                var providerStaleEventReceived = false
+                var providerReadyEventReceived = false
 
-            launch {
-                provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderStale>().take(1).collect {
-                    providerStaleEventReceived = true
+                launch {
+                    provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderStale>().take(1).collect {
+                        providerStaleEventReceived = true
+                    }
+                    provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderReady>().take(1).collect {
+                        providerReadyEventReceived = true
+                    }
                 }
-                provider.observe().filterIsInstance<OpenFeatureProviderEvents.ProviderReady>().take(1).collect {
-                    providerReadyEventReceived = true
-                }
+                runCurrent()
+                Thread.sleep(1000) // waiting to be sure that setEvaluationContext has been processed
+                val newEvalCtx = ImmutableContext(targetingKey = Uuid.random().toHexString())
+                OpenFeatureAPI.setEvaluationContext(newEvalCtx)
+                Thread.sleep(1000) // waiting to be sure that setEvaluationContext has been processed
+                runCurrent()
+                assert(providerStaleEventReceived) { "ProviderStale event was not received" }
+                assert(providerReadyEventReceived) { "ProviderReady event was not received" }
             }
-            runCurrent()
-            Thread.sleep(1000) // waiting to be sure that setEvaluationContext has been processed
-            val newEvalCtx = ImmutableContext(targetingKey = Uuid.random().toHexString())
-            OpenFeatureAPI.setEvaluationContext(newEvalCtx)
-            Thread.sleep(1000) // waiting to be sure that setEvaluationContext has been processed
-            runCurrent()
-            assert(providerStaleEventReceived) { "ProviderStale event was not received" }
-            assert(providerReadyEventReceived) { "ProviderReady event was not received" }
         }
 
     @Test
@@ -337,66 +363,68 @@ class OfrepProviderTest {
                         httpClientEngine = mockEngine,
                     ),
                 )
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            client.getStringDetails("my-other-flag", "default")
-            client.getStringDetails("my-other-flag", "default")
-            Thread.sleep(2000) // we wait 2 seconds to let the polling loop run
-            assertEquals(1, mockEngine.requestHistory.size)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                client.getStringDetails("my-other-flag", "default")
+                client.getStringDetails("my-other-flag", "default")
+                Thread.sleep(2000) // we wait 2 seconds to let the polling loop run
+                assertEquals(1, mockEngine.requestHistory.size)
+            }
         }
 
     @Test
     fun `should return a valid evaluation for Boolean`(): Unit =
         runTest {
-            val mockEngine = mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+            val mockEngine =
+                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got = client.getBooleanDetails("bool-flag", false)
-            val want =
-                FlagEvaluationDetails<Boolean>(
-                    flagKey = "bool-flag",
-                    value = true,
-                    variant = "variantA",
-                    reason = "TARGETING_MATCH",
-                    errorCode = null,
-                    errorMessage = null,
-                    metadata =
-                        EvaluationMetadata
-                            .builder()
-                            .putBoolean("additionalProp1", true)
-                            .putString("additionalProp2", "value")
-                            .putInt("additionalProp3", 123)
-                            .build(),
-                )
-            assertEquals(want, got)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got = client.getBooleanDetails("bool-flag", false)
+                val want =
+                    FlagEvaluationDetails<Boolean>(
+                        flagKey = "bool-flag",
+                        value = true,
+                        variant = "variantA",
+                        reason = "TARGETING_MATCH",
+                        errorCode = null,
+                        errorMessage = null,
+                        metadata =
+                            EvaluationMetadata
+                                .builder()
+                                .putBoolean("additionalProp1", true)
+                                .putString("additionalProp2", "value")
+                                .putInt("additionalProp3", 123)
+                                .build(),
+                    )
+                assertEquals(want, got)
+            }
         }
 
     @Test
     fun `should return a valid evaluation for Int`(): Unit =
         runTest {
-            val mockEngine = mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+            val mockEngine =
+                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got = client.getIntegerDetails("int-flag", 1)
-            val want =
-                FlagEvaluationDetails<Int>(
-                    flagKey = "int-flag",
-                    value = 1234,
-                    variant = "variantA",
-                    reason = "TARGETING_MATCH",
-                    errorCode = null,
-                    errorMessage = null,
-                    metadata =
-                        EvaluationMetadata
-                            .builder()
-                            .putBoolean("additionalProp1", true)
-                            .putString("additionalProp2", "value")
-                            .putInt("additionalProp3", 123)
-                            .build(),
-                )
-            assertEquals(want, got)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got = client.getIntegerDetails("int-flag", 1)
+                val want =
+                    FlagEvaluationDetails<Int>(
+                        flagKey = "int-flag",
+                        value = 1234,
+                        variant = "variantA",
+                        reason = "TARGETING_MATCH",
+                        errorCode = null,
+                        errorMessage = null,
+                        metadata =
+                            EvaluationMetadata
+                                .builder()
+                                .putBoolean("additionalProp1", true)
+                                .putString("additionalProp2", "value")
+                                .putInt("additionalProp3", 123)
+                                .build(),
+                    )
+                assertEquals(want, got)
+            }
         }
 
     @Test
@@ -404,26 +432,26 @@ class OfrepProviderTest {
         runTest {
             val mockEngine = mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got = client.getDoubleDetails("double-flag", 1.1)
-            val want =
-                FlagEvaluationDetails<Double>(
-                    flagKey = "double-flag",
-                    value = 12.34,
-                    variant = "variantA",
-                    reason = "TARGETING_MATCH",
-                    errorCode = null,
-                    errorMessage = null,
-                    metadata =
-                        EvaluationMetadata
-                            .builder()
-                            .putBoolean("additionalProp1", true)
-                            .putString("additionalProp2", "value")
-                            .putInt("additionalProp3", 123)
-                            .build(),
-                )
-            assertEquals(want, got)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got = client.getDoubleDetails("double-flag", 1.1)
+                val want =
+                    FlagEvaluationDetails<Double>(
+                        flagKey = "double-flag",
+                        value = 12.34,
+                        variant = "variantA",
+                        reason = "TARGETING_MATCH",
+                        errorCode = null,
+                        errorMessage = null,
+                        metadata =
+                            EvaluationMetadata
+                                .builder()
+                                .putBoolean("additionalProp1", true)
+                                .putString("additionalProp2", "value")
+                                .putInt("additionalProp3", 123)
+                                .build(),
+                    )
+                assertEquals(want, got)
+            }
         }
 
     @Test
@@ -431,26 +459,26 @@ class OfrepProviderTest {
         runTest {
             val mockEngine = mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got = client.getStringDetails("string-flag", "default")
-            val want =
-                FlagEvaluationDetails<String>(
-                    flagKey = "string-flag",
-                    value = "1234value",
-                    variant = "variantA",
-                    reason = "TARGETING_MATCH",
-                    errorCode = null,
-                    errorMessage = null,
-                    metadata =
-                        EvaluationMetadata
-                            .builder()
-                            .putBoolean("additionalProp1", true)
-                            .putString("additionalProp2", "value")
-                            .putInt("additionalProp3", 123)
-                            .build(),
-                )
-            assertEquals(want, got)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got = client.getStringDetails("string-flag", "default")
+                val want =
+                    FlagEvaluationDetails<String>(
+                        flagKey = "string-flag",
+                        value = "1234value",
+                        variant = "variantA",
+                        reason = "TARGETING_MATCH",
+                        errorCode = null,
+                        errorMessage = null,
+                        metadata =
+                            EvaluationMetadata
+                                .builder()
+                                .putBoolean("additionalProp1", true)
+                                .putString("additionalProp2", "value")
+                                .putInt("additionalProp3", 123)
+                                .build(),
+                    )
+                assertEquals(want, got)
+            }
         }
 
     @Test
@@ -458,31 +486,31 @@ class OfrepProviderTest {
         runTest {
             val mockEngine = mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got =
-                client.getObjectDetails(
-                    "array-flag",
-                    Value.List(MutableList(1) { Value.Integer(1234567890) }),
-                )
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got =
+                    client.getObjectDetails(
+                        "array-flag",
+                        Value.List(MutableList(1) { Value.Integer(1234567890) }),
+                    )
 
-            val want =
-                FlagEvaluationDetails<Value>(
-                    flagKey = "array-flag",
-                    value = Value.List(listOf(Value.Integer(1234), Value.Integer(5678))),
-                    variant = "variantA",
-                    reason = "TARGETING_MATCH",
-                    errorCode = null,
-                    errorMessage = null,
-                    metadata =
-                        EvaluationMetadata
-                            .builder()
-                            .putBoolean("additionalProp1", true)
-                            .putString("additionalProp2", "value")
-                            .putInt("additionalProp3", 123)
-                            .build(),
-                )
-            assertEquals(want, got)
+                val want =
+                    FlagEvaluationDetails<Value>(
+                        flagKey = "array-flag",
+                        value = Value.List(listOf(Value.Integer(1234), Value.Integer(5678))),
+                        variant = "variantA",
+                        reason = "TARGETING_MATCH",
+                        errorCode = null,
+                        errorMessage = null,
+                        metadata =
+                            EvaluationMetadata
+                                .builder()
+                                .putBoolean("additionalProp1", true)
+                                .putString("additionalProp2", "value")
+                                .putInt("additionalProp3", 123)
+                                .build(),
+                    )
+                assertEquals(want, got)
+            }
         }
 
     @Test
@@ -490,45 +518,45 @@ class OfrepProviderTest {
         runTest {
             val mockEngine = mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got =
-                client.getObjectDetails(
-                    "object-flag",
-                    Value.Structure(
-                        mapOf(
-                            "default" to Value.Boolean(true),
-                        ),
-                    ),
-                )
-
-            val want =
-                FlagEvaluationDetails<Value>(
-                    flagKey = "object-flag",
-                    value =
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got =
+                    client.getObjectDetails(
+                        "object-flag",
                         Value.Structure(
                             mapOf(
-                                "testValue" to
-                                    Value.Structure(
-                                        mapOf(
-                                            "toto" to Value.Integer(1234),
-                                        ),
-                                    ),
+                                "default" to Value.Boolean(true),
                             ),
                         ),
-                    variant = "variantA",
-                    reason = "TARGETING_MATCH",
-                    errorCode = null,
-                    errorMessage = null,
-                    metadata =
-                        EvaluationMetadata
-                            .builder()
-                            .putBoolean("additionalProp1", true)
-                            .putString("additionalProp2", "value")
-                            .putInt("additionalProp3", 123)
-                            .build(),
-                )
-            assertEquals(want, got)
+                    )
+
+                val want =
+                    FlagEvaluationDetails<Value>(
+                        flagKey = "object-flag",
+                        value =
+                            Value.Structure(
+                                mapOf(
+                                    "testValue" to
+                                        Value.Structure(
+                                            mapOf(
+                                                "toto" to Value.Integer(1234),
+                                            ),
+                                        ),
+                                ),
+                            ),
+                        variant = "variantA",
+                        reason = "TARGETING_MATCH",
+                        errorCode = null,
+                        errorMessage = null,
+                        metadata =
+                            EvaluationMetadata
+                                .builder()
+                                .putBoolean("additionalProp1", true)
+                                .putString("additionalProp2", "value")
+                                .putInt("additionalProp3", 123)
+                                .build(),
+                    )
+                assertEquals(want, got)
+            }
         }
 
     @Test
@@ -536,21 +564,21 @@ class OfrepProviderTest {
         runTest {
             val mockEngine = mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got = client.getBooleanDetails("object-flag", false)
-            val want =
-                FlagEvaluationDetails<Boolean>(
-                    flagKey = "object-flag",
-                    value = false,
-                    variant = null,
-                    reason = "ERROR",
-                    errorCode = ErrorCode.TYPE_MISMATCH,
-                    errorMessage =
-                        "Type mismatch: expect Boolean - Unsupported type for: " +
-                            "Structure(structure={testValue=Structure(structure={toto=Integer(integer=1234)})})",
-                )
-            assertEquals(want, got)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got = client.getBooleanDetails("object-flag", false)
+                val want =
+                    FlagEvaluationDetails<Boolean>(
+                        flagKey = "object-flag",
+                        value = false,
+                        variant = null,
+                        reason = "ERROR",
+                        errorCode = ErrorCode.TYPE_MISMATCH,
+                        errorMessage =
+                            "Type mismatch: expect Boolean - Unsupported type for: " +
+                                "Structure(structure={testValue=Structure(structure={toto=Integer(integer=1234)})})",
+                    )
+                assertEquals(want, got)
+            }
         }
 
     @Test
@@ -558,21 +586,21 @@ class OfrepProviderTest {
         runTest {
             val mockEngine = mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got = client.getStringDetails("object-flag", "default")
-            val want =
-                FlagEvaluationDetails<String>(
-                    flagKey = "object-flag",
-                    value = "default",
-                    variant = null,
-                    reason = "ERROR",
-                    errorCode = ErrorCode.TYPE_MISMATCH,
-                    errorMessage =
-                        "Type mismatch: expect String - Unsupported type for: " +
-                            "Structure(structure={testValue=Structure(structure={toto=Integer(integer=1234)})})",
-                )
-            assertEquals(want, got)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got = client.getStringDetails("object-flag", "default")
+                val want =
+                    FlagEvaluationDetails<String>(
+                        flagKey = "object-flag",
+                        value = "default",
+                        variant = null,
+                        reason = "ERROR",
+                        errorCode = ErrorCode.TYPE_MISMATCH,
+                        errorMessage =
+                            "Type mismatch: expect String - Unsupported type for: " +
+                                "Structure(structure={testValue=Structure(structure={toto=Integer(integer=1234)})})",
+                    )
+                assertEquals(want, got)
+            }
         }
 
     @Test
@@ -580,21 +608,21 @@ class OfrepProviderTest {
         runTest {
             val mockEngine = mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
             val provider = createOfrepProvider(mockEngine)
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got = client.getDoubleDetails("object-flag", 1.233)
-            val want =
-                FlagEvaluationDetails<Double>(
-                    flagKey = "object-flag",
-                    value = 1.233,
-                    variant = null,
-                    reason = "ERROR",
-                    errorCode = ErrorCode.TYPE_MISMATCH,
-                    errorMessage =
-                        "Type mismatch: expect Double - Unsupported type for: " +
-                            "Structure(structure={testValue=Structure(structure={toto=Integer(integer=1234)})})",
-                )
-            assertEquals(want, got)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got = client.getDoubleDetails("object-flag", 1.233)
+                val want =
+                    FlagEvaluationDetails<Double>(
+                        flagKey = "object-flag",
+                        value = 1.233,
+                        variant = null,
+                        reason = "ERROR",
+                        errorCode = ErrorCode.TYPE_MISMATCH,
+                        errorMessage =
+                            "Type mismatch: expect Double - Unsupported type for: " +
+                                "Structure(structure={testValue=Structure(structure={toto=Integer(integer=1234)})})",
+                    )
+                assertEquals(want, got)
+            }
         }
 
     @Test
@@ -614,30 +642,30 @@ class OfrepProviderTest {
                         httpClientEngine = mockEngine,
                     ),
                 )
-            OpenFeatureAPI.setProviderAndWait(provider, defaultEvalCtx, Dispatchers.IO)
-            val client = OpenFeatureAPI.getClient()
-            val got = client.getStringDetails("badge-class2", "default")
-            val want =
-                FlagEvaluationDetails<String>(
-                    flagKey = "badge-class2",
-                    value = "green",
-                    variant = "nocolor",
-                    reason = "DEFAULT",
-                    errorCode = null,
-                    errorMessage = null,
-                )
-            assertEquals(want, got)
-            Thread.sleep(1000)
-            val got2 = client.getStringDetails("badge-class2", "default")
-            val want2 =
-                FlagEvaluationDetails<String>(
-                    flagKey = "badge-class2",
-                    value = "blue",
-                    variant = "xxxx",
-                    reason = "TARGETING_MATCH",
-                    errorCode = null,
-                    errorMessage = null,
-                )
-            assertEquals(want2, got2)
+            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+                val got = client.getStringDetails("badge-class2", "default")
+                val want =
+                    FlagEvaluationDetails<String>(
+                        flagKey = "badge-class2",
+                        value = "green",
+                        variant = "nocolor",
+                        reason = "DEFAULT",
+                        errorCode = null,
+                        errorMessage = null,
+                    )
+                assertEquals(want, got)
+                Thread.sleep(1000)
+                val got2 = client.getStringDetails("badge-class2", "default")
+                val want2 =
+                    FlagEvaluationDetails<String>(
+                        flagKey = "badge-class2",
+                        value = "blue",
+                        variant = "xxxx",
+                        reason = "TARGETING_MATCH",
+                        errorCode = null,
+                        errorMessage = null,
+                    )
+                assertEquals(want2, got2)
+            }
         }
 }
