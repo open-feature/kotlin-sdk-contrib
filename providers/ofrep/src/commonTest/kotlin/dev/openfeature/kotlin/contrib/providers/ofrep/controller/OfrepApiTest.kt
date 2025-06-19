@@ -17,7 +17,7 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -33,7 +33,7 @@ private fun createOfrepApi(mockEngine: MockEngine) =
 class OfrepApiTest {
     @Test
     fun shouldReturnAValidEvaluationResponse() =
-        runBlocking {
+        runTest {
             val jsonString = getResourceAsString("ofrep/valid_api_short_response.json")
             val mockEngine = mockEngineWithOneResponse(content = jsonString)
 
@@ -97,7 +97,7 @@ class OfrepApiTest {
 
     @Test
     fun shouldThrowAnUnauthorizedError(): Unit =
-        runBlocking {
+        runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
                     content = "{}",
@@ -106,15 +106,13 @@ class OfrepApiTest {
             val ofrepApi = createOfrepApi(mockEngine)
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
             assertFailsWith<OfrepError.ApiUnauthorizedError> {
-                runBlocking {
-                    ofrepApi.postBulkEvaluateFlags(ctx)
-                }
+                ofrepApi.postBulkEvaluateFlags(ctx)
             }
         }
 
     @Test
     fun shouldThrowAForbiddenError(): Unit =
-        runBlocking {
+        runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
                     content = "{}",
@@ -123,15 +121,13 @@ class OfrepApiTest {
             val ofrepApi = createOfrepApi(mockEngine)
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
             assertFailsWith<OfrepError.ForbiddenError> {
-                runBlocking {
-                    ofrepApi.postBulkEvaluateFlags(ctx)
-                }
+                ofrepApi.postBulkEvaluateFlags(ctx)
             }
         }
 
     @Test
     fun shouldThrowTooManyRequest(): Unit =
-        runBlocking {
+        runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
                     content = "{}",
@@ -151,7 +147,7 @@ class OfrepApiTest {
 
     @Test
     fun shouldThrowUnexpectedError(): Unit =
-        runBlocking {
+        runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
                     content = "{}",
@@ -161,15 +157,13 @@ class OfrepApiTest {
 
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
             assertFailsWith<OfrepError.UnexpectedResponseError> {
-                runBlocking {
-                    ofrepApi.postBulkEvaluateFlags(ctx)
-                }
+                ofrepApi.postBulkEvaluateFlags(ctx)
             }
         }
 
     @Test
     fun shouldReturnAnEvaluationResponseInError(): Unit =
-        runBlocking {
+        runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
                     content =
@@ -191,7 +185,7 @@ class OfrepApiTest {
 
     @Test
     fun shouldReturnaEvaluationResponseIfWeReceiveA304(): Unit =
-        runBlocking {
+        runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
                     content = "{}",
@@ -208,7 +202,7 @@ class OfrepApiTest {
 
     @Test
     fun shouldThrowTargetingKeyMissingErrorWithNoTargetingKey(): Unit =
-        runBlocking {
+        runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
                     content = "{}",
@@ -218,15 +212,13 @@ class OfrepApiTest {
 
             val ctx = ImmutableContext(targetingKey = "")
             assertFailsWith<OpenFeatureError.TargetingKeyMissingError> {
-                runBlocking {
-                    ofrepApi.postBulkEvaluateFlags(ctx)
-                }
+                ofrepApi.postBulkEvaluateFlags(ctx)
             }
         }
 
     @Test
     fun shouldThrowUnmarshallErrorWithInvalidJson(): Unit =
-        runBlocking {
+        runTest {
             val jsonString = getResourceAsString("ofrep/invalid_api_response.json")
 
             val mockEngine =
@@ -238,25 +230,21 @@ class OfrepApiTest {
 
             val ctx = ImmutableContext(targetingKey = "68cf565d-15cd-4e8b-95a6-9399987164cd")
             assertFailsWith<OfrepError.UnmarshallError> {
-                runBlocking {
-                    ofrepApi.postBulkEvaluateFlags(ctx)
-                }
+                ofrepApi.postBulkEvaluateFlags(ctx)
             }
         }
 
     @Test
     fun shouldThrowWithInvalidOptions(): Unit =
-        runBlocking {
+        runTest {
             assertFailsWith<OfrepError.InvalidOptionsError> {
-                runBlocking {
-                    OfrepApi(OfrepOptions(endpoint = "invalid_url"))
-                }
+                OfrepApi(OfrepOptions(endpoint = "invalid_url"))
             }
         }
 
     @Test
     fun shouldETagShouldNotMatch(): Unit =
-        runBlocking {
+        runTest {
             val jsonString = getResourceAsString("ofrep/valid_api_response.json")
             val mockEngine =
                 mockEngineWithTwoResponses(
@@ -280,7 +268,7 @@ class OfrepApiTest {
 
     @Test
     fun shouldHaveIfNoneNullInTheHeaders(): Unit =
-        runBlocking {
+        runTest {
             val jsonString = getResourceAsString("ofrep/valid_api_response.json")
             val mockEngine =
                 mockEngineWithTwoResponses(
