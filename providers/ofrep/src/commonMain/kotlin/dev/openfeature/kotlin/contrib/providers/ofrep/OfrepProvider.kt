@@ -17,17 +17,20 @@ import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.runBlocking
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
-import java.util.Timer
-import java.util.TimerTask
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
+@OptIn(ExperimentalTime::class)
 class OfrepProvider(
     private val ofrepOptions: OfrepOptions,
 ) : FeatureProvider {
@@ -39,9 +42,12 @@ class OfrepProvider(
         get() = OfrepProviderMetadata()
 
     private var evaluationContext: EvaluationContext? = null
+
+    @Volatile
     private var inMemoryCache: Map<String, FlagDto> = emptyMap()
-    private var retryAfter: Date? = null
-    private var pollingTimer: Timer? = null
+    private var retryAfter: Instant? = null
+    private val pollingScope: CoroutineScope = CoroutineScope(ofrepOptions.pollingDispatcher)
+    private var pollingJob: Job? = null
 
     private val statusFlow = MutableSharedFlow<OpenFeatureProviderEvents>(replay = 1)
 
@@ -72,44 +78,48 @@ class OfrepProvider(
      * Start polling for flag updates
      */
     private fun startPolling() {
-        val task: TimerTask =
-            object : TimerTask() {
-                override fun run() {
-                    runBlocking {
-                        try {
-                            val resp =
-                                this@OfrepProvider.evaluateFlags(this@OfrepProvider.evaluationContext!!)
+        pollingJob =
+            pollingScope.launch {
+                while (isActive) {
+                    try {
+                        delay(ofrepOptions.pollingInterval)
+                        val resp =
+                            evaluateFlags(evaluationContext!!)
 
-                            when (resp) {
-                                BulkEvaluationStatus.RATE_LIMITED, BulkEvaluationStatus.SUCCESS_NO_CHANGE -> {
-                                    // Nothing to do !
-                                    //
-                                    // if rate limited: the provider should already be in stale status and
-                                    //    we don't need to emit an event or call again the API
-                                    //
-                                    // if no change: the provider should already be in ready status and
-                                    //    we don't need to emit an event if nothing has changed
-                                }
-
-                                BulkEvaluationStatus.SUCCESS_UPDATED -> {
-                                    // TODO: we should migrate to configuration change event when it's available
-                                    // in the kotlin SDK
-                                    statusFlow.emit(OpenFeatureProviderEvents.ProviderReady)
-                                }
+                        when (resp) {
+                            BulkEvaluationStatus.RATE_LIMITED, BulkEvaluationStatus.SUCCESS_NO_CHANGE -> {
+                                // Nothing to do !
+                                //
+                                // if rate limited: the provider should already be in stale status and
+                                //    we don't need to emit an event or call again the API
+                                //
+                                // if no change: the provider should already be in ready status and
+                                //    we don't need to emit an event if nothing has changed
                             }
-                        } catch (e: OfrepError.ApiTooManyRequestsError) {
-                            // in that case the provider is just stale because we were not able to
-                            statusFlow.emit(OpenFeatureProviderEvents.ProviderStale)
-                        } catch (e: Throwable) {
-                            statusFlow.emit(OpenFeatureProviderEvents.ProviderError(OpenFeatureError.GeneralError(e.message ?: "")))
+
+                            BulkEvaluationStatus.SUCCESS_UPDATED -> {
+                                // TODO: we should migrate to configuration change event when it's available
+                                // in the kotlin SDK
+                                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady)
+                            }
                         }
+                    } catch (e: CancellationException) {
+                        // expected to happen when the job is cancelled, no need to report it via the
+                        // statusFlow
+                    } catch (e: OfrepError.ApiTooManyRequestsError) {
+                        // in that case the provider is just stale because we were not able to
+                        statusFlow.emit(OpenFeatureProviderEvents.ProviderStale)
+                    } catch (e: Throwable) {
+                        statusFlow.emit(
+                            OpenFeatureProviderEvents.ProviderError(
+                                OpenFeatureError.GeneralError(
+                                    e.message ?: "",
+                                ),
+                            ),
+                        )
                     }
                 }
             }
-        val timer = Timer()
-        val pollingIntervalInMillis = ofrepOptions.pollingInterval.inWholeMilliseconds
-        timer.schedule(task, pollingIntervalInMillis, pollingIntervalInMillis)
-        pollingTimer = timer
     }
 
     override fun getBooleanEvaluation(
@@ -162,7 +172,7 @@ class OfrepProvider(
     }
 
     override fun shutdown() {
-        this.pollingTimer?.cancel()
+        pollingJob?.cancel()
     }
 
     private inline fun <reified T> genericEvaluation(
@@ -192,7 +202,7 @@ class OfrepProvider(
      * It will store the flags in the in-memory cache, if any error occurs it will throw an exception.
      */
     private suspend fun evaluateFlags(context: EvaluationContext): BulkEvaluationStatus {
-        if (this.retryAfter != null && this.retryAfter!! > Date()) {
+        if (this.retryAfter != null && this.retryAfter!! > Clock.System.now()) {
             return BulkEvaluationStatus.RATE_LIMITED
         }
 
@@ -227,22 +237,18 @@ class OfrepProvider(
         }
     }
 
-    private fun calculateRetryDate(retryAfter: String): Date? {
+    private fun calculateRetryDate(retryAfter: String): Instant? {
         if (retryAfter.isEmpty()) {
             return null
         }
 
-        val retryDate: Calendar = Calendar.getInstance()
-        try {
+        return try {
             // If retryAfter is a number, it represents seconds to wait.
-            val delayInSeconds = retryAfter.toInt()
-            retryDate.add(Calendar.SECOND, delayInSeconds)
+            val delayInSeconds = retryAfter.toInt().seconds
+            Clock.System.now() + delayInSeconds
         } catch (e: NumberFormatException) {
             // If retryAfter is not a number, it's an HTTP-date.
-            val dateFormat = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US)
-            dateFormat.timeZone = TimeZone.getTimeZone("GMT")
-            retryDate.time = dateFormat.parse(retryAfter) ?: return null
+            Instant.parse(retryAfter)
         }
-        return retryDate.time
     }
 }

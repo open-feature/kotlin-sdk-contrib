@@ -8,6 +8,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headers
 import io.ktor.http.headersOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 
 internal const val FAKE_ENDPOINT = "http://localhost/"
 
@@ -30,7 +32,7 @@ internal fun mockEngineWithOneResponse(
     )
 }
 
-internal fun mockEngineWithTwoResponses(
+internal fun TestScope.mockEngineWithTwoResponses(
     firstContent: String,
     firstStatus: HttpStatusCode = HttpStatusCode.OK,
     firstAdditionalHeaders: Headers = headersOf(),
@@ -39,24 +41,27 @@ internal fun mockEngineWithTwoResponses(
     secondAdditionalHeaders: Headers = headersOf(),
 ): MockEngine {
     var counter = 0
-    return MockEngine {
-        val (content, status, additionalHeaders) =
-            when (counter++) {
-                0 -> arrayOf(firstContent, firstStatus, firstAdditionalHeaders)
-                1 -> arrayOf(secondContent, secondStatus, secondAdditionalHeaders)
-                else -> error("Only two calls expected")
-            }
-        respond(
-            content = content as String,
-            status = status as HttpStatusCode,
-            headers =
-                headers {
-                    appendAll(additionalHeaders as Headers)
-                    append(
-                        HttpHeaders.ContentType,
-                        ContentType.Application.Json.toString(),
-                    )
-                },
-        )
-    }
+    return MockEngine.create {
+        dispatcher = StandardTestDispatcher(testScheduler)
+        addHandler {
+            val (content, status, additionalHeaders) =
+                when (counter++) {
+                    0 -> arrayOf(firstContent, firstStatus, firstAdditionalHeaders)
+                    1 -> arrayOf(secondContent, secondStatus, secondAdditionalHeaders)
+                    else -> error("Only two calls expected")
+                }
+            respond(
+                content = content as String,
+                status = status as HttpStatusCode,
+                headers =
+                    headers {
+                        appendAll(additionalHeaders as Headers)
+                        append(
+                            HttpHeaders.ContentType,
+                            ContentType.Application.Json.toString(),
+                        )
+                    },
+            )
+        }
+    } as MockEngine
 }

@@ -2,6 +2,8 @@ package dev.openfeature.kotlin.contrib.providers.ofrep.bean
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -47,4 +49,8 @@ data class OfrepOptions(
      * requests.
      */
     val httpClientEngine: HttpClientEngine? = null,
+    /**
+     * The [CoroutineDispatcher] to be used for polling the OFREP backend
+     */
+    val pollingDispatcher: CoroutineDispatcher = Dispatchers.Default
 )
