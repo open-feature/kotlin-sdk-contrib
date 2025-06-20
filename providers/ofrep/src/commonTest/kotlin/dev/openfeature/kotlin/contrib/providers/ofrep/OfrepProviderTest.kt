@@ -2,6 +2,12 @@
 
 package dev.openfeature.kotlin.contrib.providers.ofrep
 
+import INVALID_CONTEXT_PAYLOAD
+import PARSE_ERROR_PAYLOAD
+import VALID_1_FLAG_IN_PARSE_ERROR_PAYLOAD
+import VALID_API_RESPONSE2_PAYLOAD
+import VALID_API_RESPONSE_PAYLOAD
+import VALID_API_SHORT_RESPONSE_PAYLOAD
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
 import dev.openfeature.kotlin.sdk.Client
 import dev.openfeature.kotlin.sdk.EvaluationContext
@@ -86,7 +92,7 @@ class OfrepProviderTest {
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
-                    getResourceAsString("ofrep/valid_api_response.json"),
+                    VALID_API_RESPONSE_PAYLOAD,
                     status = HttpStatusCode.fromValue(401),
                 )
 
@@ -114,7 +120,7 @@ class OfrepProviderTest {
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
-                    getResourceAsString("ofrep/valid_api_response.json"),
+                    VALID_API_RESPONSE_PAYLOAD,
                     status = HttpStatusCode.fromValue(403),
                 )
 
@@ -142,7 +148,7 @@ class OfrepProviderTest {
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
-                    getResourceAsString("ofrep/valid_api_response.json"),
+                    VALID_API_RESPONSE_PAYLOAD,
                     status = HttpStatusCode.fromValue(429),
                     additionalHeaders = headersOf(HttpHeaders.RetryAfter, "3"),
                 )
@@ -174,7 +180,7 @@ class OfrepProviderTest {
     fun `should be in Error status if error targeting key is empty`(): Unit =
         runTest {
             val mockEngine =
-                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+                mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
 
             val provider = createOfrepProvider(mockEngine)
             var providerErrorReceived = false
@@ -205,7 +211,7 @@ class OfrepProviderTest {
     fun `should be in Error status if error targeting key is missing`(): Unit =
         runTest {
             val mockEngine =
-                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+                mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
 
             val provider = createOfrepProvider(mockEngine)
             var providerErrorReceived = false
@@ -237,7 +243,7 @@ class OfrepProviderTest {
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
-                    getResourceAsString("ofrep/invalid_context.json"),
+                    INVALID_CONTEXT_PAYLOAD,
                     status = HttpStatusCode.fromValue(400),
                 )
             val provider = createOfrepProvider(mockEngine)
@@ -267,7 +273,7 @@ class OfrepProviderTest {
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
-                    getResourceAsString("ofrep/parse_error.json"),
+                    PARSE_ERROR_PAYLOAD,
                     status = HttpStatusCode.fromValue(400),
                 )
 
@@ -297,7 +303,7 @@ class OfrepProviderTest {
     fun `should return a flag not found error if the flag does not exist`(): Unit =
         runTest {
             val mockEngine =
-                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+                mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
                 val got = client.getBooleanDetails("non-existent-flag", false)
@@ -319,7 +325,7 @@ class OfrepProviderTest {
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
-                    getResourceAsString("ofrep/valid_api_short_response.json"),
+                    VALID_API_SHORT_RESPONSE_PAYLOAD,
                 )
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
@@ -348,7 +354,7 @@ class OfrepProviderTest {
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
-                    getResourceAsString("ofrep/valid_1_flag_in_parse_error.json"),
+                    VALID_1_FLAG_IN_PARSE_ERROR_PAYLOAD,
                 )
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
@@ -371,8 +377,8 @@ class OfrepProviderTest {
         runTest {
             val mockEngine =
                 mockEngineWithTwoResponses(
-                    firstContent = getResourceAsString("ofrep/valid_api_response.json"),
-                    secondContent = getResourceAsString("ofrep/valid_api_response_2.json"),
+                    firstContent = VALID_API_RESPONSE_PAYLOAD,
+                    secondContent = VALID_API_RESPONSE2_PAYLOAD,
                 )
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
@@ -432,7 +438,7 @@ class OfrepProviderTest {
     fun `should return a valid evaluation for Boolean`(): Unit =
         runTest {
             val mockEngine =
-                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+                mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
                 val got = client.getBooleanDetails("bool-flag", false)
@@ -460,7 +466,7 @@ class OfrepProviderTest {
     fun `should return a valid evaluation for Int`(): Unit =
         runTest {
             val mockEngine =
-                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+                mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
                 val got = client.getIntegerDetails("int-flag", 1)
@@ -488,7 +494,7 @@ class OfrepProviderTest {
     fun `should return a valid evaluation for Double`(): Unit =
         runTest {
             val mockEngine =
-                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+                mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
                 val got = client.getDoubleDetails("double-flag", 1.1)
@@ -516,7 +522,7 @@ class OfrepProviderTest {
     fun `should return a valid evaluation for String`(): Unit =
         runTest {
             val mockEngine =
-                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+                mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
                 val got = client.getStringDetails("string-flag", "default")
@@ -544,7 +550,7 @@ class OfrepProviderTest {
     fun `should return a valid evaluation for List`(): Unit =
         runTest {
             val mockEngine =
-                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+                mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
                 val got =
@@ -577,7 +583,7 @@ class OfrepProviderTest {
     fun `should return a valid evaluation for Map`(): Unit =
         runTest {
             val mockEngine =
-                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+                mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
                 val got =
@@ -624,7 +630,7 @@ class OfrepProviderTest {
     fun `should return TypeMismatch Bool`(): Unit =
         runTest {
             val mockEngine =
-                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+                mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
                 val got = client.getBooleanDetails("object-flag", false)
@@ -647,7 +653,7 @@ class OfrepProviderTest {
     fun `should return TypeMismatch String`(): Unit =
         runTest {
             val mockEngine =
-                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+                mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
                 val got = client.getStringDetails("object-flag", "default")
@@ -670,7 +676,7 @@ class OfrepProviderTest {
     fun `should return TypeMismatch Double`(): Unit =
         runTest {
             val mockEngine =
-                mockEngineWithOneResponse(getResourceAsString("ofrep/valid_api_response.json"))
+                mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
             withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
                 val got = client.getDoubleDetails("object-flag", 1.233)
@@ -697,8 +703,8 @@ class OfrepProviderTest {
         ) {
             val mockEngine =
                 mockEngineWithTwoResponses(
-                    firstContent = getResourceAsString("ofrep/valid_api_short_response.json"),
-                    secondContent = getResourceAsString("ofrep/valid_api_response_2.json"),
+                    firstContent = VALID_API_SHORT_RESPONSE_PAYLOAD,
+                    secondContent = VALID_API_RESPONSE2_PAYLOAD,
                 )
 
             val provider = createOfrepProvider(mockEngine)

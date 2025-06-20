@@ -1,3 +1,4 @@
+internal const val VALID_1_FLAG_IN_PARSE_ERROR_PAYLOAD = """
 {
   "flags": [
     {
@@ -18,3 +19,4 @@
     }
   ]
 }
+"""

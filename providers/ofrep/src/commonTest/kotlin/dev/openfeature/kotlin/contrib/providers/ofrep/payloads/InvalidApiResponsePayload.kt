@@ -1,3 +1,4 @@
+internal const val INVALID_API_RESPONSE_PAYLOAD = """
 {
   "flags": [
     {
@@ -23,3 +24,4 @@
       }
     }
 }
+"""

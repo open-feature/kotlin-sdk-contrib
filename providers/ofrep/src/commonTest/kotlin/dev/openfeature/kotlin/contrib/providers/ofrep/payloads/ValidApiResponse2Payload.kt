@@ -1,3 +1,4 @@
+internal const val VALID_API_RESPONSE2_PAYLOAD = """
 {
   "flags": [
     {
@@ -108,3 +109,4 @@
     }
   ]
 }
+"""

@@ -15,7 +15,6 @@ openfeature-kotlin-sdk = { group="dev.openfeature", name="kotlin-sdk", version.r
 kotlin-test = { group="org.jetbrains.kotlin", name="kotlin-test", version.ref="kotlin" }
 kotlinx-coroutines-core = { group="org.jetbrains.kotlinx", name="kotlinx-coroutines-core", version.ref="kotlinx-coroutines" }
 kotlinx-coroutines-test = { group="org.jetbrains.kotlinx", name="kotlinx-coroutines-test", version.ref="kotlinx-coroutines" }
-okio = { module="com.squareup.okio:okio", version="3.13.0" }
 
 [plugins]
 kotlin-multiplatform = { id="org.jetbrains.kotlin.multiplatform", version.ref="kotlin" }

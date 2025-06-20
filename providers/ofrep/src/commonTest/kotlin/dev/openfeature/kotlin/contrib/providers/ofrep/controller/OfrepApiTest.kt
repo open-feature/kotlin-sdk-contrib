@@ -1,11 +1,13 @@
 package dev.openfeature.kotlin.contrib.providers.ofrep.controller
 
+import INVALID_API_RESPONSE_PAYLOAD
+import VALID_API_RESPONSE_PAYLOAD
+import VALID_API_SHORT_RESPONSE_PAYLOAD
 import dev.openfeature.kotlin.contrib.providers.ofrep.FAKE_ENDPOINT
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.FlagDto
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepApiResponse
 import dev.openfeature.kotlin.contrib.providers.ofrep.bean.OfrepOptions
 import dev.openfeature.kotlin.contrib.providers.ofrep.error.OfrepError
-import dev.openfeature.kotlin.contrib.providers.ofrep.getResourceAsString
 import dev.openfeature.kotlin.contrib.providers.ofrep.mockEngineWithOneResponse
 import dev.openfeature.kotlin.contrib.providers.ofrep.mockEngineWithTwoResponses
 import dev.openfeature.kotlin.sdk.EvaluationMetadata
@@ -34,8 +36,7 @@ class OfrepApiTest {
     @Test
     fun shouldReturnAValidEvaluationResponse() =
         runTest {
-            val jsonString = getResourceAsString("ofrep/valid_api_short_response.json")
-            val mockEngine = mockEngineWithOneResponse(content = jsonString)
+            val mockEngine = mockEngineWithOneResponse(content = VALID_API_SHORT_RESPONSE_PAYLOAD)
 
             val ofrepApi = createOfrepApi(mockEngine)
 
@@ -219,11 +220,9 @@ class OfrepApiTest {
     @Test
     fun shouldThrowUnmarshallErrorWithInvalidJson(): Unit =
         runTest {
-            val jsonString = getResourceAsString("ofrep/invalid_api_response.json")
-
             val mockEngine =
                 mockEngineWithOneResponse(
-                    content = jsonString,
+                    content = INVALID_API_RESPONSE_PAYLOAD,
                     status = HttpStatusCode.fromValue(400),
                 )
             val ofrepApi = createOfrepApi(mockEngine)
@@ -245,10 +244,9 @@ class OfrepApiTest {
     @Test
     fun shouldETagShouldNotMatch(): Unit =
         runTest {
-            val jsonString = getResourceAsString("ofrep/valid_api_response.json")
             val mockEngine =
                 mockEngineWithTwoResponses(
-                    firstContent = jsonString,
+                    firstContent = VALID_API_RESPONSE_PAYLOAD,
                     firstStatus = HttpStatusCode.fromValue(200),
                     firstAdditionalHeaders = headersOf(HttpHeaders.ETag, "123"),
                     secondContent = "",
@@ -269,10 +267,9 @@ class OfrepApiTest {
     @Test
     fun shouldHaveIfNoneNullInTheHeaders(): Unit =
         runTest {
-            val jsonString = getResourceAsString("ofrep/valid_api_response.json")
             val mockEngine =
                 mockEngineWithTwoResponses(
-                    firstContent = jsonString,
+                    firstContent = VALID_API_RESPONSE_PAYLOAD,
                     firstStatus = HttpStatusCode.fromValue(200),
                     firstAdditionalHeaders = headersOf(HttpHeaders.ETag, "123"),
                     secondContent = "",

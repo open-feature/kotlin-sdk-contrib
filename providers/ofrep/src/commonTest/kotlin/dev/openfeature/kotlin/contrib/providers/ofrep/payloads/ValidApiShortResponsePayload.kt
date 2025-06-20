@@ -1,3 +1,4 @@
+internal const val VALID_API_SHORT_RESPONSE_PAYLOAD = """
 {
   "flags": [
     {
@@ -24,3 +25,4 @@
     }
   ]
 }
+"""

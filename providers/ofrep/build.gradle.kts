@@ -27,7 +27,6 @@ kotlin {
             implementation(libs.ktor.cio)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
-            implementation(libs.okio)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
