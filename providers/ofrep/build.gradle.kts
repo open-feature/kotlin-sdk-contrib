@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.android.library)
+    // Needed for the JS coroutine support for the tests
+    alias(libs.plugins.kotlinx.atomicfu)
 }
 
 kotlin {
@@ -13,6 +15,17 @@ kotlin {
             compileTaskProvider.configure {
                 compilerOptions {
                     jvmTarget.set(JvmTarget.JVM_11)
+                }
+            }
+        }
+    }
+    linuxX64 {}
+    js {
+        nodejs {}
+        browser {
+            testTask {
+                useKarma {
+                    useChromeHeadless()
                 }
             }
         }

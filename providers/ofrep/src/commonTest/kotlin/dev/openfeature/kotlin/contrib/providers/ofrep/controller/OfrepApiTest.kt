@@ -97,7 +97,7 @@ class OfrepApiTest {
         }
 
     @Test
-    fun shouldThrowAnUnauthorizedError(): Unit =
+    fun shouldThrowAnUnauthorizedError() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -112,7 +112,7 @@ class OfrepApiTest {
         }
 
     @Test
-    fun shouldThrowAForbiddenError(): Unit =
+    fun shouldThrowAForbiddenError() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -127,7 +127,7 @@ class OfrepApiTest {
         }
 
     @Test
-    fun shouldThrowTooManyRequest(): Unit =
+    fun shouldThrowTooManyRequest() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -147,7 +147,7 @@ class OfrepApiTest {
         }
 
     @Test
-    fun shouldThrowUnexpectedError(): Unit =
+    fun shouldThrowUnexpectedError() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -163,7 +163,7 @@ class OfrepApiTest {
         }
 
     @Test
-    fun shouldReturnAnEvaluationResponseInError(): Unit =
+    fun shouldReturnAnEvaluationResponseInError() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -185,7 +185,7 @@ class OfrepApiTest {
         }
 
     @Test
-    fun shouldReturnaEvaluationResponseIfWeReceiveA304(): Unit =
+    fun shouldReturnaEvaluationResponseIfWeReceiveA304() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -202,7 +202,7 @@ class OfrepApiTest {
         }
 
     @Test
-    fun shouldThrowTargetingKeyMissingErrorWithNoTargetingKey(): Unit =
+    fun shouldThrowTargetingKeyMissingErrorWithNoTargetingKey() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -218,7 +218,7 @@ class OfrepApiTest {
         }
 
     @Test
-    fun shouldThrowUnmarshallErrorWithInvalidJson(): Unit =
+    fun shouldThrowUnmarshallErrorWithInvalidJson() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -234,7 +234,7 @@ class OfrepApiTest {
         }
 
     @Test
-    fun shouldThrowWithInvalidOptions(): Unit =
+    fun shouldThrowWithInvalidOptions() =
         runTest {
             assertFailsWith<OfrepError.InvalidOptionsError> {
                 OfrepApi(OfrepOptions(endpoint = "invalid_url"))
@@ -242,7 +242,7 @@ class OfrepApiTest {
         }
 
     @Test
-    fun shouldETagShouldNotMatch(): Unit =
+    fun shouldETagShouldNotMatch() =
         runTest {
             val mockEngine =
                 mockEngineWithTwoResponses(
@@ -265,7 +265,7 @@ class OfrepApiTest {
         }
 
     @Test
-    fun shouldHaveIfNoneNullInTheHeaders(): Unit =
+    fun shouldHaveIfNoneNullInTheHeaders() =
         runTest {
             val mockEngine =
                 mockEngineWithTwoResponses(

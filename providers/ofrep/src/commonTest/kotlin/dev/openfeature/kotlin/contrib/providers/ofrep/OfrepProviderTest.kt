@@ -24,8 +24,6 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.take
@@ -38,6 +36,8 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.ExperimentalUuidApi
@@ -58,10 +58,9 @@ private fun TestScope.createOfrepProvider(mockEngine: MockEngine) =
 private suspend fun withClient(
     provider: FeatureProvider,
     initialContext: EvaluationContext,
-    dispatcher: CoroutineDispatcher,
     body: (client: Client) -> Unit,
 ) {
-    OpenFeatureAPI.setProviderAndWait(provider, initialContext, dispatcher)
+    OpenFeatureAPI.setProviderAndWait(provider, initialContext, StandardTestDispatcher())
     try {
         val client = OpenFeatureAPI.getClient()
         body(client)
@@ -88,7 +87,7 @@ class OfrepProviderTest {
     }
 
     @Test
-    fun `should be in Fatal status if 401 error during initialise`(): Unit =
+    fun `should be in Fatal status if 401 error during initialise`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -109,14 +108,14 @@ class OfrepProviderTest {
                     }
             }
             runCurrent()
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 runCurrent()
-                assert(providerErrorReceived) { "ProviderError event was not received" }
+                assertTrue(providerErrorReceived, "ProviderError event was not received")
             }
         }
 
     @Test
-    fun `should be in Fatal status if 403 error during initialise`(): Unit =
+    fun `should be in Fatal status if 403 error during initialise`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -137,14 +136,14 @@ class OfrepProviderTest {
                     }
             }
             runCurrent()
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 runCurrent()
-                assert(providerErrorReceived) { "ProviderError event was not received" }
+                assertTrue(providerErrorReceived, "ProviderError event was not received")
             }
         }
 
     @Test
-    fun `should be in Error status if 429 error during initialise`(): Unit =
+    fun `should be in Error status if 429 error during initialise`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -168,16 +167,20 @@ class OfrepProviderTest {
                     }
             }
             runCurrent()
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 runCurrent()
-                assert(providerErrorReceived) { "ProviderError event was not received" }
-                assert(exceptionReceived is OpenFeatureError.GeneralError) { "The exception is not of type GeneralError" }
-                assert(exceptionReceived?.message == "Rate limited") { "The exception's message is not correct" }
+                assertTrue(providerErrorReceived, "ProviderError event was not received")
+                assertIs<OpenFeatureError.GeneralError>(exceptionReceived, "The exception is not of type GeneralError")
+                assertEquals(
+                    "Rate limited",
+                    (exceptionReceived as OpenFeatureError.GeneralError).message,
+                    "The exception's message is not correct",
+                )
             }
         }
 
     @Test
-    fun `should be in Error status if error targeting key is empty`(): Unit =
+    fun `should be in Error status if error targeting key is empty`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
@@ -198,17 +201,18 @@ class OfrepProviderTest {
             }
             runCurrent()
             val evalCtx = ImmutableContext(targetingKey = "")
-            withClient(provider, evalCtx, Dispatchers.IO) { client ->
+            withClient(provider, evalCtx) { client ->
                 runCurrent()
-                assert(providerErrorReceived) { "ProviderError event was not received" }
-                assert(
-                    exceptionReceived is OpenFeatureError.TargetingKeyMissingError,
-                ) { "The exception is not of type TargetingKeyMissingError" }
+                assertTrue(providerErrorReceived, "ProviderError event was not received")
+                assertIs<OpenFeatureError.TargetingKeyMissingError>(
+                    exceptionReceived,
+                    "The exception is not of type TargetingKeyMissingError",
+                )
             }
         }
 
     @Test
-    fun `should be in Error status if error targeting key is missing`(): Unit =
+    fun `should be in Error status if error targeting key is missing`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
@@ -229,17 +233,18 @@ class OfrepProviderTest {
             }
             runCurrent()
             val evalCtx = ImmutableContext()
-            withClient(provider, evalCtx, Dispatchers.IO) { client ->
+            withClient(provider, evalCtx) { client ->
                 runCurrent()
-                assert(providerErrorReceived) { "ProviderError event was not received" }
-                assert(
-                    exceptionReceived is OpenFeatureError.TargetingKeyMissingError,
-                ) { "The exception is not of type TargetingKeyMissingError" }
+                assertTrue(providerErrorReceived, "ProviderError event was not received")
+                assertIs<OpenFeatureError.TargetingKeyMissingError>(
+                    exceptionReceived,
+                    "The exception is not of type TargetingKeyMissingError",
+                )
             }
         }
 
     @Test
-    fun `should be in error status if error invalid context`(): Unit =
+    fun `should be in error status if error invalid context`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -261,15 +266,15 @@ class OfrepProviderTest {
                     }
             }
             runCurrent()
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 runCurrent()
-                assert(providerErrorReceived) { "ProviderError event was not received" }
-                assert(exceptionReceived is OpenFeatureError.InvalidContextError) { "The exception is not of type InvalidContextError" }
+                assertTrue(providerErrorReceived, "ProviderError event was not received")
+                assertIs<OpenFeatureError.InvalidContextError>(exceptionReceived, "The exception is not of type InvalidContextError")
             }
         }
 
     @Test
-    fun `should be in error status if error parse error`(): Unit =
+    fun `should be in error status if error parse error`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -292,20 +297,20 @@ class OfrepProviderTest {
                     }
             }
             runCurrent()
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 runCurrent()
-                assert(providerErrorReceived) { "ProviderError event was not received" }
-                assert(exceptionReceived is OpenFeatureError.ParseError) { "The exception is not of type ParseError" }
+                assertTrue(providerErrorReceived, "ProviderError event was not received")
+                assertIs<OpenFeatureError.ParseError>(exceptionReceived, "The exception is not of type ParseError")
             }
         }
 
     @Test
-    fun `should return a flag not found error if the flag does not exist`(): Unit =
+    fun `should return a flag not found error if the flag does not exist`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 val got = client.getBooleanDetails("non-existent-flag", false)
                 val want =
                     FlagEvaluationDetails<Boolean>(
@@ -321,14 +326,14 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should return evaluation details if the flag exists`(): Unit =
+    fun `should return evaluation details if the flag exists`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
                     VALID_API_SHORT_RESPONSE_PAYLOAD,
                 )
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 val got = client.getStringDetails("title-flag", "default")
                 val want =
                     FlagEvaluationDetails<String>(
@@ -350,14 +355,14 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should return parse error if the API returns the error`(): Unit =
+    fun `should return parse error if the API returns the error`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
                     VALID_1_FLAG_IN_PARSE_ERROR_PAYLOAD,
                 )
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 val got = client.getStringDetails("my-other-flag", "default")
                 val want =
                     FlagEvaluationDetails<String>(
@@ -373,7 +378,7 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should send a context changed event if context has changed`(): Unit =
+    fun `should send a context changed event if context has changed`() =
         runTest {
             val mockEngine =
                 mockEngineWithTwoResponses(
@@ -381,7 +386,7 @@ class OfrepProviderTest {
                     secondContent = VALID_API_RESPONSE2_PAYLOAD,
                 )
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
 
                 // TODO: should change when we have a way to observe context changes event
                 //       check issue https://github.com/open-feature/kotlin-sdk/issues/107
@@ -411,13 +416,13 @@ class OfrepProviderTest {
                     dispatcher = StandardTestDispatcher(testScheduler),
                 )
                 runCurrent()
-                assert(providerStaleEventReceived) { "ProviderStale event was not received" }
-                assert(providerReadyEventReceived) { "ProviderReady event was not received" }
+                assertTrue(providerStaleEventReceived, "ProviderStale event was not received")
+                assertTrue(providerReadyEventReceived, "ProviderReady event was not received")
             }
         }
 
     @Test
-    fun `should not try to call the API before Retry-After header`(): Unit =
+    fun `should not try to call the API before Retry-After header`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(
@@ -426,7 +431,7 @@ class OfrepProviderTest {
                 )
             val provider =
                 createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 client.getStringDetails("my-other-flag", "default")
                 client.getStringDetails("my-other-flag", "default")
                 advanceTimeBy(POLLING_INTERVAL)
@@ -435,12 +440,12 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should return a valid evaluation for Boolean`(): Unit =
+    fun `should return a valid evaluation for Boolean`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 val got = client.getBooleanDetails("bool-flag", false)
                 val want =
                     FlagEvaluationDetails<Boolean>(
@@ -463,12 +468,12 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should return a valid evaluation for Int`(): Unit =
+    fun `should return a valid evaluation for Int`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 val got = client.getIntegerDetails("int-flag", 1)
                 val want =
                     FlagEvaluationDetails<Int>(
@@ -491,12 +496,12 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should return a valid evaluation for Double`(): Unit =
+    fun `should return a valid evaluation for Double`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 val got = client.getDoubleDetails("double-flag", 1.1)
                 val want =
                     FlagEvaluationDetails<Double>(
@@ -519,12 +524,12 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should return a valid evaluation for String`(): Unit =
+    fun `should return a valid evaluation for String`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 val got = client.getStringDetails("string-flag", "default")
                 val want =
                     FlagEvaluationDetails<String>(
@@ -547,12 +552,12 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should return a valid evaluation for List`(): Unit =
+    fun `should return a valid evaluation for List`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 val got =
                     client.getObjectDetails(
                         "array-flag",
@@ -580,12 +585,12 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should return a valid evaluation for Map`(): Unit =
+    fun `should return a valid evaluation for Map`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 val got =
                     client.getObjectDetails(
                         "object-flag",
@@ -627,12 +632,12 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should return TypeMismatch Bool`(): Unit =
+    fun `should return TypeMismatch Bool`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 val got = client.getBooleanDetails("object-flag", false)
                 val want =
                     FlagEvaluationDetails<Boolean>(
@@ -650,12 +655,12 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should return TypeMismatch String`(): Unit =
+    fun `should return TypeMismatch String`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 val got = client.getStringDetails("object-flag", "default")
                 val want =
                     FlagEvaluationDetails<String>(
@@ -673,12 +678,12 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should return TypeMismatch Double`(): Unit =
+    fun `should return TypeMismatch Double`() =
         runTest {
             val mockEngine =
                 mockEngineWithOneResponse(VALID_API_RESPONSE_PAYLOAD)
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 val got = client.getDoubleDetails("object-flag", 1.233)
                 val want =
                     FlagEvaluationDetails<Double>(
@@ -696,7 +701,7 @@ class OfrepProviderTest {
         }
 
     @Test
-    fun `should have different result if waiting for next polling interval`(): Unit =
+    fun `should have different result if waiting for next polling interval`() =
         runTest(
             // TODO: remove
             timeout = 10.minutes,
@@ -708,7 +713,7 @@ class OfrepProviderTest {
                 )
 
             val provider = createOfrepProvider(mockEngine)
-            withClient(provider, defaultEvalCtx, Dispatchers.IO) { client ->
+            withClient(provider, defaultEvalCtx) { client ->
                 runCurrent()
                 val got = client.getStringDetails("badge-class2", "default")
                 val want =

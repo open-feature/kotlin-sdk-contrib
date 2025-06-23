@@ -4,14 +4,15 @@ This provider is designed to use the [OpenFeature Remote Evaluation Protocol (OF
 
 ## Supported platforms
 
-| Supported | Platform             | Supported versions |
-|-----------|----------------------|--------------------|
-| ✅         | Android              | SDK 21+            |
-| ✅         | JVM                  | JDK 11+            |
-| ❌         | Native               |                    |
-| ❌         | Javascript (Node.js) |                    |
-| ❌         | Javascript (Browser) |                    |
-| ❌         | Wasm                 |                    |
+| Supported | Platform             | Supported versions                                                             |
+|-----------|----------------------|--------------------------------------------------------------------------------|
+| ✅         | Android              |                                                                                |
+| ✅         | JVM                  | JDK 11+                                                                        |
+| ✅         | Native               | Linux x64                                                                      |
+| ❌         | Native               | [Other native targets](https://kotlinlang.org/docs/native-target-support.html) |
+| ✅         | Javascript (Node.js) |                                                                                |
+| ✅         | Javascript (Browser) |                                                                                |
+| ❌         | Wasm                 |                                                                                |
 
 
 ## Installation
