@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.1.21"
+kotlin = "2.2.10"
 kotlinx-coroutines = "1.10.2"
 open-feature-kotlin-sdk = "0.4.1"
 
