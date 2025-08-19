@@ -3,9 +3,7 @@ import org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest
 import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest
 
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.binary.compatibility.validator)
-    alias(libs.plugins.ktlint)
+    id("dev.openfeature.provider-conventions")
     // Needed for the JS coroutine support for the tests
     alias(libs.plugins.kotlinx.atomicfu)
 }
