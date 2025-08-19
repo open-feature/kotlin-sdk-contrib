@@ -1,11 +1,11 @@
 package dev.openfeature.kotlin.contrib.providers.envvar
 
-import dev.openfeature.sdk.FeatureProvider
-import dev.openfeature.sdk.ImmutableContext
-import dev.openfeature.sdk.ProviderEvaluation
-import dev.openfeature.sdk.Reason
-import dev.openfeature.sdk.Value
-import dev.openfeature.sdk.exceptions.OpenFeatureError
+import dev.openfeature.kotlin.sdk.FeatureProvider
+import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.ProviderEvaluation
+import dev.openfeature.kotlin.sdk.Reason
+import dev.openfeature.kotlin.sdk.Value
+import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
