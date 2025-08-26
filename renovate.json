@@ -9,5 +9,6 @@
         ],
         "fileFilters": ["kotlin-js-store/yarn.lock"],
         "executionMode": "update"
-    }
+    },
+    "allowedCommands": ["^./gradlew kotlinUpgradeYarnLock$"]
 }
