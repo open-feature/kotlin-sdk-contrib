@@ -26,7 +26,7 @@ public abstract interface class dev/openfeature/kotlin/contrib/providers/envvar/
 
 public abstract interface class dev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer {
 	public static final field Companion Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer$Companion;
-	public abstract fun andThen (Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;)Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;
+	public fun andThen (Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;)Ldev/openfeature/kotlin/contrib/providers/envvar/EnvironmentKeyTransformer;
 	public abstract fun transformKey (Ljava/lang/String;)Ljava/lang/String;
 }
 
