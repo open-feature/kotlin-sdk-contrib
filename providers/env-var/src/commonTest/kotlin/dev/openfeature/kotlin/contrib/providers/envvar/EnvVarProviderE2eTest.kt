@@ -1,8 +1,8 @@
 package dev.openfeature.kotlin.contrib.providers.envvar
 
-import dev.openfeature.sdk.Client
-import dev.openfeature.sdk.OpenFeatureAPI
-import dev.openfeature.sdk.Reason
+import dev.openfeature.kotlin.sdk.Client
+import dev.openfeature.kotlin.sdk.OpenFeatureAPI
+import dev.openfeature.kotlin.sdk.Reason
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

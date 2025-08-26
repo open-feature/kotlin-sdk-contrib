@@ -1,13 +1,13 @@
 package dev.openfeature.kotlin.contrib.providers.envvar
 
-import dev.openfeature.sdk.EvaluationContext
-import dev.openfeature.sdk.FeatureProvider
-import dev.openfeature.sdk.Hook
-import dev.openfeature.sdk.ProviderEvaluation
-import dev.openfeature.sdk.ProviderMetadata
-import dev.openfeature.sdk.Reason
-import dev.openfeature.sdk.Value
-import dev.openfeature.sdk.exceptions.OpenFeatureError
+import dev.openfeature.kotlin.sdk.EvaluationContext
+import dev.openfeature.kotlin.sdk.FeatureProvider
+import dev.openfeature.kotlin.sdk.Hook
+import dev.openfeature.kotlin.sdk.ProviderEvaluation
+import dev.openfeature.kotlin.sdk.ProviderMetadata
+import dev.openfeature.kotlin.sdk.Reason
+import dev.openfeature.kotlin.sdk.Value
+import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 
 /** EnvVarProvider is the Kotlin provider implementation for the environment variables.  */
 class EnvVarProvider(
