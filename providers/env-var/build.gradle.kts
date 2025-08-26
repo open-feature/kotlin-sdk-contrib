@@ -35,6 +35,15 @@ kotlin {
     }
 }
 
+mavenPublishing {
+    pom {
+        name.set("OpenFeature Environment Variables Kotlin Provider")
+        description.set(
+            "The Environment Variables provider allows you to read feature flags from the process's environment.",
+        )
+    }
+}
+
 // Set test environment variable for tests
 // Used in ./commonTest/kotlin/dev/openfeature/kotlin/contrib/providers/envvar/PlatformSpecificEnvironmentGatewayTest.kt
 val testEnvironmentVariable = "TEST_ENVIRONMENT_VARIABLE" to "foo"

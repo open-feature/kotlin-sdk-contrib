@@ -38,10 +38,6 @@ mavenPublishing {
         version = findProperty("version").toString()
     )
     pom {
-        name.set("OpenFeature Kotlin SDK")
-        description.set(
-            "This is the Kotlin implementation of OpenFeature, a vendor-agnostic abstraction library for evaluating feature flags."
-        )
         url.set("https://openfeature.dev")
         licenses {
             license {

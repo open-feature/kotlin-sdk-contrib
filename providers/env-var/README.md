@@ -1,6 +1,6 @@
 # Environment Variables Kotlin Provider
 
-Environment Variables provider allows you to read feature flags from the [process's environment](https://en.wikipedia.org/wiki/Environment_variable).
+The Environment Variables provider allows you to read feature flags from the [process's environment](https://en.wikipedia.org/wiki/Environment_variable).
 
 ## Supported platforms
 
