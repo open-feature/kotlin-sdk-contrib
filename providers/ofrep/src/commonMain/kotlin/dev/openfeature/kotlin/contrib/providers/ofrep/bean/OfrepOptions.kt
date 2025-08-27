@@ -52,5 +52,5 @@ data class OfrepOptions(
     /**
      * The [CoroutineDispatcher] to be used for polling the OFREP backend
      */
-    val pollingDispatcher: CoroutineDispatcher = Dispatchers.Default
+    val pollingDispatcher: CoroutineDispatcher = Dispatchers.Default,
 )
