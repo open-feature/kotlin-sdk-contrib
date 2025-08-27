@@ -12,3 +12,6 @@ build
 
 # Ignore Kotlin files
 .kotlin
+
+# Locally set Gradle parameters
+local.properties
