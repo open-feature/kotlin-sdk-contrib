@@ -2,5 +2,13 @@
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
         "config:base"
-    ]
+    ],
+    "postUpgradeTasks": {
+        "commands": [
+            "./gradlew kotlinUpgradeYarnLock"
+        ],
+        "fileFilters": ["kotlin-js-store/yarn.lock"],
+        "executionMode": "update"
+    },
+    "allowedCommands": ["^./gradlew kotlinUpgradeYarnLock$"]
 }

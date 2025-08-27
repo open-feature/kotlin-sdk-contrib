@@ -1,9 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
+    id("com.android.library")
+    id("dev.openfeature.provider-conventions")
     alias(libs.plugins.kotlinx.serialization)
-    alias(libs.plugins.android.library)
     // Needed for the JS coroutine support for the tests
     alias(libs.plugins.kotlinx.atomicfu)
 }

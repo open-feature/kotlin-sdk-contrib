@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.targets.js.testing.KotlinJsTest
 import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest
 
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
+    id("dev.openfeature.provider-conventions")
     // Needed for the JS coroutine support for the tests
     alias(libs.plugins.kotlinx.atomicfu)
 }
@@ -32,6 +32,15 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.coroutines.test)
         }
+    }
+}
+
+mavenPublishing {
+    pom {
+        name.set("OpenFeature Environment Variables Kotlin Provider")
+        description.set(
+            "The Environment Variables provider allows you to read feature flags from the process's environment.",
+        )
     }
 }
 
