@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlinx.serialization)
     // Needed for the JS coroutine support for the tests
     alias(libs.plugins.kotlinx.atomicfu)
+    alias(libs.plugins.docker.compose)
 }
 
 kotlin {
@@ -74,4 +75,13 @@ android {
             isIncludeAndroidResources = true
         }
     }
+}
+
+// Launch test container for IntegrationTest.kt
+dockerCompose {
+    useComposeFiles = listOf("src/integrationTest/docker-compose.yaml")
+}
+tasks.withType(Test::class) {
+    dependsOn(tasks.named("composeUp"))
+    finalizedBy(tasks.named("composeDown"))
 }

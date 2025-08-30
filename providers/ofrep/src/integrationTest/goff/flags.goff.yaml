@@ -1,0 +1,89 @@
+static-string-flag:
+  variations:
+    default_variation: foo
+  defaultRule:
+    variation: default_variation
+
+static-boolean-flag:
+  variations:
+    default_variation: true
+  defaultRule:
+    variation: default_variation
+
+static-integer-flag:
+  variations:
+    default_variation: 123
+  defaultRule:
+    variation: default_variation
+
+static-double-flag:
+  variations:
+    default_variation: 3.14
+  defaultRule:
+    variation: default_variation
+
+static-object-flag:
+  variations:
+    default_variation:
+      string: foo
+      boolean: true
+      number: 2.78
+      list: ["one", "two", "three"]
+  defaultRule:
+    variation: default_variation
+
+
+targeted-string-flag:
+  variations:
+    default_variation: default
+    targeted_variation: bar
+  defaultRule:
+    variation: default_variation
+  targeting:
+    - query: targeted eq true
+      variation: targeted_variation
+
+targeted-boolean-flag:
+  variations:
+    default_variation: true
+    targeted_variation: false
+  defaultRule:
+    variation: default_variation
+  targeting:
+    - query: targeted eq true
+      variation: targeted_variation
+
+targeted-integer-flag:
+  variations:
+    default_variation: 123
+    targeted_variation: 999
+  defaultRule:
+    variation: default_variation
+  targeting:
+    - query: targeted eq true
+      variation: targeted_variation
+
+targeted-double-flag:
+  variations:
+    default_variation: 3.14
+    targeted_variation: 999.9
+  defaultRule:
+    variation: default_variation
+  targeting:
+    - query: targeted eq true
+      variation: targeted_variation
+
+targeted-object-flag:
+  variations:
+    default_variation:
+      string: foo
+      boolean: true
+      number: 2.78
+      list: ["one", "two", "three"]
+    targeted_variation:
+      special: true
+  defaultRule:
+    variation: default_variation
+  targeting:
+    - query: targeted eq true
+      variation: targeted_variation

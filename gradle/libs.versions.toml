@@ -26,3 +26,4 @@ nexus-publish = { id="io.github.gradle-nexus.publish-plugin", version="2.0.0" }
 binary-compatibility-validator = { id="org.jetbrains.kotlinx.binary-compatibility-validator", version="0.18.1" }
 vanniktech-maven-publish = { id="com.vanniktech.maven.publish", version="0.34.0" }
 android-library = { id="com.android.library", version.ref="android" }
+docker-compose = { id="com.avast.gradle.docker-compose", version="0.17.12" }
