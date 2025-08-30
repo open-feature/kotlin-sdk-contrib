@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinTest
 
 plugins {
     id("com.android.library")
@@ -6,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlinx.serialization)
     // Needed for the JS coroutine support for the tests
     alias(libs.plugins.kotlinx.atomicfu)
+    alias(libs.plugins.docker.compose)
 }
 
 kotlin {
@@ -74,4 +76,18 @@ android {
             isIncludeAndroidResources = true
         }
     }
+}
+
+// Launch test container for IntegrationTest.kt
+dockerCompose {
+    useComposeFiles = listOf("src/integrationTest/docker-compose.yaml")
+}
+// Note: some Kotlin test targets extend the Test (e.g. JVM), some others the KotlinTest class (e.g. Native, JS)
+tasks.withType(Test::class) {
+    dependsOn(tasks.named("composeUp"))
+    finalizedBy(tasks.named("composeDown"))
+}
+tasks.withType(KotlinTest::class) {
+    dependsOn(tasks.named("composeUp"))
+    finalizedBy(tasks.named("composeDown"))
 }
