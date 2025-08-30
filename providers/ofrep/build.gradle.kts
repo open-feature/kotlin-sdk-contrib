@@ -34,19 +34,33 @@ kotlin {
     }
 
     sourceSets {
-        commonMain.dependencies {
-            api(libs.openfeature.kotlin.sdk)
+        val commonMain by getting {
+            dependencies {
+                api(libs.openfeature.kotlin.sdk)
 
-            api(libs.kotlinx.coroutines.core)
-            api(libs.ktor.core)
-            implementation(libs.ktor.cio)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.serialization.kotlinx.json)
+                api(libs.kotlinx.coroutines.core)
+                api(libs.ktor.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.kotlinx.json)
+            }
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.ktor.client.mock)
+        }
+        val nonJsMain by creating {
+            dependsOn(commonMain)
+            dependencies {
+                implementation(libs.ktor.cio)
+            }
+        }
+        androidMain.get().dependsOn(nonJsMain)
+        jvmMain.get().dependsOn(nonJsMain)
+        linuxX64Main.get().dependsOn(nonJsMain)
+
+        jsMain.dependencies {
+            implementation(libs.ktor.js)
         }
     }
 }
