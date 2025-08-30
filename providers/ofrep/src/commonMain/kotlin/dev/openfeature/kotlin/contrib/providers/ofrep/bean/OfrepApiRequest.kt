@@ -8,5 +8,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 internal data class OfrepApiRequest(
     @Serializable(with = EvaluationContextSerializer::class)
-    val ctx: EvaluationContext = ImmutableContext(),
+    val context: EvaluationContext = ImmutableContext(),
 )
