@@ -8,6 +8,7 @@ dependencies {
     implementation(plugin(libs.plugins.kotlin.multiplatform))
     implementation(plugin(libs.plugins.dokka))
     implementation(plugin(libs.plugins.vanniktech.maven.publish))
+    implementation(plugin(libs.plugins.android.library))
 }
 
 /**
