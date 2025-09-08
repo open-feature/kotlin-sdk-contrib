@@ -1,7 +1,7 @@
 services:
   goff:
     container_name: test-ofrep-backend
-    image: docker.io/gofeatureflag/go-feature-flag:v1.45
+    image: docker.io/gofeatureflag/go-feature-flag:v1.46
     ports:
       - "1031:1031"
     volumes:
