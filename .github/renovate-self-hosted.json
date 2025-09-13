@@ -1,0 +1,7 @@
+{
+  "allowedCommands": ["^./gradlew kotlinUpgradeYarnLock$"],
+  "onboarding": true,
+  "platform": "github",
+  "repositories": ["open-feature/kotlin-sdk-contrib"],
+  "semanticCommits": "enabled"
+}
