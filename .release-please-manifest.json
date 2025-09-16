@@ -1,1 +1,4 @@
-{".":"0.1.0"}
+{
+  "providers/env-var": "0.1.0",
+  "providers/ofrep": "0.1.0"
+}

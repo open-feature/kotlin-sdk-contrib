@@ -1,16 +1,24 @@
 {
-    "bootstrap-sha": "c9eca676d0fd091a6146de2246435f9d52ab3cae",
+    "bootstrap-sha": "2c5c1d95344990ae45d2d26f30e8c4c45add67c2",
     "packages": {
-        ".": {
+        "providers/env-var": {
             "release-type": "simple",
             "bump-minor-pre-major": true,
             "bump-patch-for-minor-pre-major": true,
             "versioning": "default",
             "extra-files": [
                 "README.md",
-                "build.gradle.kts",
-                "providers/*/README.md",
-                "hooks/*/README.md"
+                "build.gradle.kts"
+            ]
+        },
+        "providers/ofrep": {
+            "release-type": "simple",
+            "bump-minor-pre-major": true,
+            "bump-patch-for-minor-pre-major": true,
+            "versioning": "default",
+            "extra-files": [
+                "README.md",
+                "build.gradle.kts"
             ]
         }
     },
