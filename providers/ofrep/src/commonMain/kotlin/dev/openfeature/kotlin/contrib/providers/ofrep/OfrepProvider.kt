@@ -61,16 +61,20 @@ class OfrepProvider(
             if (bulkEvaluationStatus == BulkEvaluationStatus.RATE_LIMITED) {
                 statusFlow.emit(
                     OpenFeatureProviderEvents.ProviderError(
-                        OpenFeatureError.GeneralError("Rate limited"),
+                        error = OpenFeatureError.GeneralError("Rate limited"),
                     ),
                 )
             } else {
-                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady)
+                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
             }
         } catch (e: OpenFeatureError) {
-            statusFlow.emit(OpenFeatureProviderEvents.ProviderError(e))
+            statusFlow.emit(OpenFeatureProviderEvents.ProviderError(error = e))
         } catch (e: Exception) {
-            statusFlow.emit(OpenFeatureProviderEvents.ProviderError(OpenFeatureError.GeneralError(e.message ?: "Unknown error")))
+            statusFlow.emit(
+                OpenFeatureProviderEvents.ProviderError(
+                    error = OpenFeatureError.GeneralError(e.message ?: "Unknown error"),
+                ),
+            )
         }
         startPolling()
     }
@@ -101,7 +105,7 @@ class OfrepProvider(
                             BulkEvaluationStatus.SUCCESS_UPDATED -> {
                                 // TODO: we should migrate to configuration change event when it's available
                                 // in the kotlin SDK
-                                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady)
+                                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
                             }
                         }
                     } catch (e: CancellationException) {
@@ -109,13 +113,14 @@ class OfrepProvider(
                         // statusFlow
                     } catch (e: OfrepError.ApiTooManyRequestsError) {
                         // in that case the provider is just stale because we were not able to
-                        statusFlow.emit(OpenFeatureProviderEvents.ProviderStale)
+                        statusFlow.emit(OpenFeatureProviderEvents.ProviderStale())
                     } catch (e: Throwable) {
                         statusFlow.emit(
                             OpenFeatureProviderEvents.ProviderError(
-                                OpenFeatureError.GeneralError(
-                                    e.message ?: "",
-                                ),
+                                error =
+                                    OpenFeatureError.GeneralError(
+                                        e.message ?: "",
+                                    ),
                             ),
                         )
                     }
@@ -157,7 +162,7 @@ class OfrepProvider(
         oldContext: EvaluationContext?,
         newContext: EvaluationContext,
     ) {
-        this.statusFlow.emit(OpenFeatureProviderEvents.ProviderStale)
+        this.statusFlow.emit(OpenFeatureProviderEvents.ProviderStale())
         this.evaluationContext = newContext
 
         try {
@@ -165,10 +170,14 @@ class OfrepProvider(
             // we don't emit event if the evaluation is rate limited because
             // the provider is still stale
             if (postBulkEvaluateFlags != BulkEvaluationStatus.RATE_LIMITED) {
-                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady)
+                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
             }
         } catch (e: Throwable) {
-            statusFlow.emit(OpenFeatureProviderEvents.ProviderError(OpenFeatureError.GeneralError(e.message ?: "")))
+            statusFlow.emit(
+                OpenFeatureProviderEvents.ProviderError(
+                    error = OpenFeatureError.GeneralError(e.message ?: ""),
+                ),
+            )
         }
     }
 

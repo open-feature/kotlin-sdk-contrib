@@ -1,9 +1,11 @@
 [versions]
-kotlin = "2.2.10"
+kotlin = "2.4.0-Beta1"
 kotlinx-coroutines = "1.10.2"
-open-feature-kotlin-sdk = "0.6.2"
+# Snapshot publishes iOS/Native klibs
+open-feature-kotlin-sdk = "0.7.3-SNAPSHOT"
 android = "8.10.1"
 ktor = "3.1.3"
+launchdarkly-android = "5.11.1"
 
 [libraries]
 ktor-core = { module="io.ktor:ktor-client-core", version.ref="ktor" }
@@ -16,12 +18,13 @@ openfeature-kotlin-sdk = { group="dev.openfeature", name="kotlin-sdk", version.r
 kotlin-test = { group="org.jetbrains.kotlin", name="kotlin-test", version.ref="kotlin" }
 kotlinx-coroutines-core = { group="org.jetbrains.kotlinx", name="kotlinx-coroutines-core", version.ref="kotlinx-coroutines" }
 kotlinx-coroutines-test = { group="org.jetbrains.kotlinx", name="kotlinx-coroutines-test", version.ref="kotlinx-coroutines" }
+launchdarkly-android-client-sdk = { group="com.launchdarkly", name="launchdarkly-android-client-sdk", version.ref="launchdarkly-android" }
 
 [plugins]
 dokka = { id="org.jetbrains.dokka", version="2.0.0" }
 kotlin-multiplatform = { id="org.jetbrains.kotlin.multiplatform", version.ref="kotlin" }
-kotlinx-atomicfu = { id="org.jetbrains.kotlinx.atomicfu", version="0.29.0" }
-kotlinx-serialization = { id="org.jetbrains.kotlin.plugin.serialization", version="2.1.21" }
+kotlinx-atomicfu = { id="org.jetbrains.kotlinx.atomicfu", version="0.32.1" }
+kotlinx-serialization = { id="org.jetbrains.kotlin.plugin.serialization", version.ref="kotlin" }
 ktlint = { id="org.jlleitschuh.gradle.ktlint", version="13.1.0" }
 nexus-publish = { id="io.github.gradle-nexus.publish-plugin", version="2.0.0" }
 binary-compatibility-validator = { id="org.jetbrains.kotlinx.binary-compatibility-validator", version="0.18.1" }
