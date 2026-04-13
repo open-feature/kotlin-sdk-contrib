@@ -32,7 +32,14 @@ mavenPublishing {
             androidVariantsToPublish = listOf("release")
         )
     )
-    signAllPublications()
+    // Sonatype releases require signatures; local `publishToMavenLocal` does not and is used for testing
+    // Opt out with -PsignAllPublications=false
+    val signPublications = findProperty("signAllPublications")
+        ?.toString()
+        ?.toBooleanStrictOrNull() ?: true
+    if (signPublications) {
+        signAllPublications()
+    }
     coordinates(
         groupId = "dev.openfeature.kotlin.contrib.providers",
         version = findProperty("version").toString()
