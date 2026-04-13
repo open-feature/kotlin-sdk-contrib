@@ -19,8 +19,13 @@ import kotlin.time.ExperimentalTime
 internal class AndroidLaunchDarklyEngine(
     private val application: Application,
     private val config: LaunchDarklyConfig,
+    private val clientProvider: LdClientProvider,
 ) : LaunchDarklyEngine {
-    private lateinit var client: LDClient
+    constructor(application: Application, config: LaunchDarklyConfig) : this(
+        application,
+        config,
+        DefaultLdClientProvider(),
+    )
 
     override suspend fun initialize(initialContext: EvaluationContext?) {
         withContext(Dispatchers.IO) {
@@ -55,7 +60,7 @@ internal class AndroidLaunchDarklyEngine(
                 .evaluationReasons(config.evaluationReasons)
                 .build()
             val ldContext = initialContext.toLDContext()
-            client = LDClient.init(
+            (clientProvider as? DefaultLdClientProvider)?.client = LDClient.init(
                 application,
                 ldConfig,
                 ldContext,
@@ -65,8 +70,11 @@ internal class AndroidLaunchDarklyEngine(
     }
 
     override fun shutdown() {
-        if (::client.isInitialized) {
+        val defaultProvider = clientProvider as? DefaultLdClientProvider
+        val client = defaultProvider?.client
+        if (client != null) {
             runCatching { client.close() }
+            defaultProvider.client = null
         }
     }
 
@@ -75,8 +83,9 @@ internal class AndroidLaunchDarklyEngine(
         newContext: EvaluationContext,
     ) {
         withContext(Dispatchers.IO) {
+            val ldClient = clientProvider.getClient() ?: return@withContext
             val ldContext = newContext.toLDContext()
-            client.identify(ldContext).get(config.contextUpdateTimeoutMs, TimeUnit.MILLISECONDS)
+            ldClient.identify(ldContext).get(config.contextUpdateTimeoutMs, TimeUnit.MILLISECONDS)
         }
     }
 
@@ -84,33 +93,46 @@ internal class AndroidLaunchDarklyEngine(
         key: String,
         defaultValue: Boolean,
         context: EvaluationContext?,
-    ): LdEvaluationDetail<Boolean> = detail(client.boolVariationDetail(key, defaultValue))
+    ): LdEvaluationDetail<Boolean> {
+        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        return detail(ldClient.boolVariationDetail(key, defaultValue))
+    }
 
     override fun getStringDetail(
         key: String,
         defaultValue: String,
         context: EvaluationContext?,
-    ): LdEvaluationDetail<String> = detail(client.stringVariationDetail(key, defaultValue))
+    ): LdEvaluationDetail<String> {
+        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        return detail(ldClient.stringVariationDetail(key, defaultValue))
+    }
 
     override fun getIntegerDetail(
         key: String,
         defaultValue: Int,
         context: EvaluationContext?,
-    ): LdEvaluationDetail<Int> = detail(client.intVariationDetail(key, defaultValue))
+    ): LdEvaluationDetail<Int> {
+        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        return detail(ldClient.intVariationDetail(key, defaultValue))
+    }
 
     override fun getDoubleDetail(
         key: String,
         defaultValue: Double,
         context: EvaluationContext?,
-    ): LdEvaluationDetail<Double> = detail(client.doubleVariationDetail(key, defaultValue))
+    ): LdEvaluationDetail<Double> {
+        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        return detail(ldClient.doubleVariationDetail(key, defaultValue))
+    }
 
     override fun getObjectDetail(
         key: String,
         defaultValue: Value,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Value> {
+        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
         val ldDefault = defaultValue.toLDValue()
-        val evaluationDetail = client.jsonValueVariationDetail(key, ldDefault)
+        val evaluationDetail = ldClient.jsonValueVariationDetail(key, ldDefault)
         val value = evaluationDetail.value?.toValue() ?: Value.Null
         return LdEvaluationDetail(
             value = value,

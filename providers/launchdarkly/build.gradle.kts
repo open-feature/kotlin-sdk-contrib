@@ -3,6 +3,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.library")
     id("dev.openfeature.provider-conventions")
+    // Mocking in androidUnitTest; requires a Mokkery build compatible with the project's Kotlin version.
+    alias(libs.plugins.mokkery)
 }
 
 group = "dev.openfeature.kotlin.contrib"

@@ -19,45 +19,50 @@ import kotlin.coroutines.resume
 
 internal class IosLaunchDarklyEngine(
     private val config: LaunchDarklyConfig,
+    private val clientProvider: LdClientProvider,
 ) : LaunchDarklyEngine {
-    private var client: LDClient? = null
+    constructor(config: LaunchDarklyConfig) : this(config, DefaultLdClientProvider())
 
     override suspend fun initialize(initialContext: EvaluationContext?) {
         // LDClient and LDConfig are main-thread oriented; LaunchDarkly iOS 11+ also invokes start completions on
         // the main queue (Swift 6–friendly), so this dispatcher stays correct.
         withContext(Dispatchers.Main) {
-            val auto =
-                if (config.autoEnvAttributes) {
-                    AutoEnvAttributesEnabled
-                } else {
-                    AutoEnvAttributesDisabled
-                }
-            val ldConfig = LDConfig(mobileKey = config.mobileKey, autoEnvAttributes = auto)
+            val autoEnvAttributesMode = if (config.autoEnvAttributes) {
+                AutoEnvAttributesEnabled
+            } else {
+                AutoEnvAttributesDisabled
+            }
+            val ldConfig = LDConfig(
+                mobileKey = config.mobileKey,
+                autoEnvAttributes = autoEnvAttributesMode
+            )
+
             ldConfig.debugMode = config.debugLogging
             ldConfig.evaluationReasons = config.evaluationReasons
             ldConfig.sendEvents = config.sendEvents
-            config.wrapperName?.let { name ->
-                ldConfig.wrapperName = name
+            config.wrapperName?.let { wrapperNameToApply ->
+                ldConfig.wrapperName = wrapperNameToApply
                 ldConfig.wrapperVersion = config.wrapperVersion
             }
             val ldContext = initialContext.toLDContext()
-            suspendCancellableCoroutine { cont ->
+            suspendCancellableCoroutine { continuation ->
                 LDClient.startWithConfiguration(
                     configuration = ldConfig,
                     context = ldContext,
                     startWaitSeconds = config.initWaitSeconds.toDouble(),
-                    completion = { _ ->
-                        cont.resume(Unit)
+                    completion = {
+                        continuation.resume(Unit)
                     },
                 )
             }
-            client = LDClient.get()
+            (clientProvider as? DefaultLdClientProvider)?.client = LDClient.get()
         }
     }
 
     override fun shutdown() {
-        client?.close()
-        client = null
+        val ldClient = clientProvider.getClient()
+        ldClient?.close()
+        (clientProvider as? DefaultLdClientProvider)?.client = null
     }
 
     override suspend fun onContextSet(
@@ -65,26 +70,28 @@ internal class IosLaunchDarklyEngine(
         newContext: EvaluationContext,
     ) {
         withContext(Dispatchers.Main) {
-            val c = client ?: return@withContext
+            val ldClient = clientProvider.getClient() ?: return@withContext
             val ldContext = newContext.toLDContext()
-            suspendCancellableCoroutine { cont ->
-                c.identifyWithContext(ldContext) {
-                    cont.resume(Unit)
+            suspendCancellableCoroutine { continuation ->
+                ldClient.identifyWithContext(ldContext) {
+                    continuation.resume(Unit)
                 }
             }
         }
     }
-
-    private fun requireClient(): LDClient =
-        checkNotNull(client) { "LaunchDarkly LDClient not started" }
 
     override fun getBooleanDetail(
         key: String,
         defaultValue: Boolean,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Boolean> {
-        val d = requireClient().boolVariationDetailForKey(key, defaultValue)
-        return toLdEvaluationDetail(d.value, d.variationIndex, d.reason)
+        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val evaluationDetail = ldClient.boolVariationDetailForKey(key, defaultValue)
+        return toLdEvaluationDetail(
+            evaluationDetail.value,
+            evaluationDetail.variationIndex,
+            evaluationDetail.reason,
+        )
     }
 
     override fun getStringDetail(
@@ -92,9 +99,14 @@ internal class IosLaunchDarklyEngine(
         defaultValue: String,
         context: EvaluationContext?,
     ): LdEvaluationDetail<String> {
-        val d = requireClient().stringVariationDetailForKey(key, defaultValue)
-        val v = d.value ?: defaultValue
-        return toLdEvaluationDetail(v, d.variationIndex, d.reason)
+        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val evaluationDetail = ldClient.stringVariationDetailForKey(key, defaultValue)
+        val resolvedString = evaluationDetail.value ?: defaultValue
+        return toLdEvaluationDetail(
+            resolvedString,
+            evaluationDetail.variationIndex,
+            evaluationDetail.reason,
+        )
     }
 
     override fun getIntegerDetail(
@@ -102,8 +114,14 @@ internal class IosLaunchDarklyEngine(
         defaultValue: Int,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Int> {
-        val d = requireClient().integerVariationDetailForKey(key, defaultValue.toLong())
-        return toLdEvaluationDetail(d.value.toInt(), d.variationIndex, d.reason)
+        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val evaluationDetail =
+            ldClient.integerVariationDetailForKey(key, defaultValue.toLong())
+        return toLdEvaluationDetail(
+            evaluationDetail.value.toInt(),
+            evaluationDetail.variationIndex,
+            evaluationDetail.reason,
+        )
     }
 
     override fun getDoubleDetail(
@@ -111,8 +129,13 @@ internal class IosLaunchDarklyEngine(
         defaultValue: Double,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Double> {
-        val d = requireClient().doubleVariationDetailForKey(key, defaultValue)
-        return toLdEvaluationDetail(d.value, d.variationIndex, d.reason)
+        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val evaluationDetail = ldClient.doubleVariationDetailForKey(key, defaultValue)
+        return toLdEvaluationDetail(
+            evaluationDetail.value,
+            evaluationDetail.variationIndex,
+            evaluationDetail.reason,
+        )
     }
 
     override fun getObjectDetail(
@@ -120,10 +143,15 @@ internal class IosLaunchDarklyEngine(
         defaultValue: Value,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Value> {
+        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
         val ldDefault = defaultValue.toLDValue()
-        val jsonDetail = requireClient().jsonVariationDetailForKey(key, ldDefault)
-        val value = jsonDetail.value.toValue()
-        return toLdEvaluationDetail(value, jsonDetail.variationIndex, jsonDetail.reason)
+        val jsonEvaluationDetail = ldClient.jsonVariationDetailForKey(key, ldDefault)
+        val objectValue = jsonEvaluationDetail.value.toValue()
+        return toLdEvaluationDetail(
+            objectValue,
+            jsonEvaluationDetail.variationIndex,
+            jsonEvaluationDetail.reason,
+        )
     }
 
     private fun <T> toLdEvaluationDetail(
@@ -141,17 +169,17 @@ internal class IosLaunchDarklyEngine(
 
     private fun Map<out Any?, *>?.reasonKindString(): String? {
         if (this == null) return null
-        val raw = this["kind"] ?: return null
-        val v = raw as? LDValue ?: return null
-        return v.stringValue()
+        val kindEntry = this["kind"] ?: return null
+        val kindLdValue = kindEntry as? LDValue ?: return null
+        return kindLdValue.stringValue()
     }
 
     private fun Map<out Any?, *>?.errorKindEnum(): LdErrorKind? {
         if (this == null) return null
-        val raw = this["errorKind"] ?: return null
-        val v = raw as? LDValue ?: return null
-        val s = v.stringValue()
-        return when (s) {
+        val errorKindEntry = this["errorKind"] ?: return null
+        val errorKindLdValue = errorKindEntry as? LDValue ?: return null
+        val errorKindString = errorKindLdValue.stringValue()
+        return when (errorKindString) {
             "CLIENT_NOT_READY" -> LdErrorKind.CLIENT_NOT_READY
             "FLAG_NOT_FOUND" -> LdErrorKind.FLAG_NOT_FOUND
             "MALFORMED_FLAG" -> LdErrorKind.MALFORMED_FLAG
@@ -165,21 +193,21 @@ internal class IosLaunchDarklyEngine(
 
 private fun EvaluationContext?.toLDContext(): LDContext {
     if (this == null) {
-        val b = LDContextBuilder(key = DEFAULT_TARGETING_KEY)
-        b.anonymousWithAnonymous(true)
-        return b.build().unwrapContext()
+        val contextBuilder = LDContextBuilder(key = DEFAULT_TARGETING_KEY)
+        contextBuilder.anonymousWithAnonymous(true)
+        return contextBuilder.build().unwrapContext()
     }
-    val b = LDContextBuilder(key = targetingKeyOrAnonymous)
-    b.anonymousWithAnonymous(targetingKeyOrAnonymous == DEFAULT_TARGETING_KEY)
-    for ((k, v) in asMap()) {
-        b.trySetValueWithName(k, v.toLDValue())
+    val contextBuilder = LDContextBuilder(key = targetingKeyOrAnonymous)
+    contextBuilder.anonymousWithAnonymous(targetingKeyOrAnonymous == DEFAULT_TARGETING_KEY)
+    for ((attributeName, attributeValue) in asMap()) {
+        contextBuilder.trySetValueWithName(attributeName, attributeValue.toLDValue())
     }
-    return b.build().unwrapContext()
+    return contextBuilder.build().unwrapContext()
 }
 
 private fun ContextBuilderResult.unwrapContext(): LDContext {
-    val s = success
-    if (s != null) return s
-    val err = failure?.localizedDescription ?: "unknown"
-    error("LaunchDarkly LDContext build failed: $err")
+    val builtContext = success
+    if (builtContext != null) return builtContext
+    val failureDescription = failure?.localizedDescription ?: "unknown"
+    error("LaunchDarkly LDContext build failed: $failureDescription")
 }

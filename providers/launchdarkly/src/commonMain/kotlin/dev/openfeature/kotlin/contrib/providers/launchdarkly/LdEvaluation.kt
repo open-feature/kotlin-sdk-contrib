@@ -31,6 +31,15 @@ internal data class LdEvaluationDetail<out T>(
     val exceptionMessage: String?,
 )
 
+internal fun <T> ldClientNotReadyEvaluationDetail(defaultValue: T): LdEvaluationDetail<T> =
+    LdEvaluationDetail(
+        value = defaultValue,
+        variationIndex = null,
+        reasonKind = null,
+        errorKind = LdErrorKind.CLIENT_NOT_READY,
+        exceptionMessage = null,
+    )
+
 internal fun <T> LdEvaluationDetail<T>.toProviderEvaluation(): ProviderEvaluation<T> =
     ProviderEvaluation(
         value = value,
