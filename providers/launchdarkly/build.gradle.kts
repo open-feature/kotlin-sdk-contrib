@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     id("com.android.library")
     id("dev.openfeature.provider-conventions")
@@ -10,17 +8,11 @@ plugins {
 group = "dev.openfeature.kotlin.contrib"
 
 kotlin {
+    jvmToolchain(17)
+
     applyDefaultHierarchyTemplate()
 
-    androidTarget {
-        compilations.all {
-            compileTaskProvider.configure {
-                compilerOptions {
-                    jvmTarget.set(JvmTarget.JVM_11)
-                }
-            }
-        }
-    }
+    androidTarget()
     iosArm64()
     iosSimulatorArm64()
 
@@ -60,11 +52,6 @@ android {
 
     defaultConfig {
         minSdk = 21
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
     }
 
     publishing {

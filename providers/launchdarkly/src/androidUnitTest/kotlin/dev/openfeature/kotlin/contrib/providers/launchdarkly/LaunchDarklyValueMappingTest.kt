@@ -48,7 +48,7 @@ class LaunchDarklyValueMappingTest {
         val v = Value.Instant(i)
         val ld = v.toLDValue()
         val back = ld.toValue()
-        kotlin.test.assertEquals(Value.String(i.toString()), back)
+        assertEquals(Value.String(i.toString()), back)
     }
 
     @Test

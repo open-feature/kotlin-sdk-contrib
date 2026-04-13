@@ -13,18 +13,10 @@ data class LaunchDarklyConfig(
     /** Timeout for [com.launchdarkly.sdk.android.LDClient.identify] (milliseconds). */
     val contextUpdateTimeoutMs: Long = 15_000L,
     val autoEnvAttributes: Boolean = true,
-    val evaluationReasons: Boolean = true,
     val debugLogging: Boolean = false,
     /**
      * When false, disables sending analytics events to LaunchDarkly (flag streaming/polling unchanged).
      * See LaunchDarkly iOS SDK `LDConfig.sendEvents` / Android `LDConfig` (SDK 9.12+).
      */
     val sendEvents: Boolean = true,
-    /**
-     * Optional wrapper identity for LaunchDarkly (iOS `LDConfig.wrapperName` / Android
-     * [com.launchdarkly.sdk.android.integrations.HttpConfigurationBuilder.wrapper]). Set [wrapperVersion]
-     * when publishing a versioned artifact; on Android a null version is sent as an empty string.
-     */
-    val wrapperName: String? = "openfeature-kotlin-launchdarkly",
-    val wrapperVersion: String? = null,
 )

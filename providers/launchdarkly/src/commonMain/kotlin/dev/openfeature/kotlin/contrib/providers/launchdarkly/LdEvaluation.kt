@@ -13,15 +13,14 @@ internal enum class LdErrorKind {
     EXCEPTION,
 }
 
-internal fun LdErrorKind.toErrorCode(): ErrorCode =
-    when (this) {
-        LdErrorKind.CLIENT_NOT_READY -> ErrorCode.PROVIDER_NOT_READY
-        LdErrorKind.FLAG_NOT_FOUND -> ErrorCode.FLAG_NOT_FOUND
-        LdErrorKind.MALFORMED_FLAG -> ErrorCode.PARSE_ERROR
-        LdErrorKind.USER_NOT_SPECIFIED -> ErrorCode.TARGETING_KEY_MISSING
-        LdErrorKind.WRONG_TYPE -> ErrorCode.TYPE_MISMATCH
-        LdErrorKind.EXCEPTION -> ErrorCode.GENERAL
-    }
+internal fun LdErrorKind.toErrorCode(): ErrorCode = when (this) {
+    LdErrorKind.CLIENT_NOT_READY -> ErrorCode.PROVIDER_NOT_READY
+    LdErrorKind.FLAG_NOT_FOUND -> ErrorCode.FLAG_NOT_FOUND
+    LdErrorKind.MALFORMED_FLAG -> ErrorCode.PARSE_ERROR
+    LdErrorKind.USER_NOT_SPECIFIED -> ErrorCode.TARGETING_KEY_MISSING
+    LdErrorKind.WRONG_TYPE -> ErrorCode.TYPE_MISMATCH
+    LdErrorKind.EXCEPTION -> ErrorCode.GENERAL
+}
 
 internal data class LdEvaluationDetail<out T>(
     val value: T,

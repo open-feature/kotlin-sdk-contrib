@@ -4,7 +4,8 @@ package dev.openfeature.kotlin.contrib.providers.launchdarkly
 
 import dev.openfeature.kotlin.sdk.EvaluationContext
 import dev.openfeature.kotlin.sdk.Value
-import kotlinx.coroutines.Dispatchers
+import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import swiftPMImport.dev.openfeature.kotlin.contrib.providers.launchdarkly.AutoEnvAttributesDisabled
@@ -19,63 +20,52 @@ import kotlin.coroutines.resume
 
 internal class IosLaunchDarklyEngine(
     private val config: LaunchDarklyConfig,
-    private val clientProvider: LdClientProvider,
+    private val mainDispatcher: CoroutineDispatcher,
+    private val clientFactory: LdClientFactory = DefaultLdClientFactory,
 ) : LaunchDarklyEngine {
-    constructor(config: LaunchDarklyConfig) : this(config, DefaultLdClientProvider())
+    private var client: LDClient? = null
 
-    override suspend fun initialize(initialContext: EvaluationContext?) {
-        // LDClient and LDConfig are main-thread oriented; LaunchDarkly iOS 11+ also invokes start completions on
-        // the main queue (Swift 6–friendly), so this dispatcher stays correct.
-        withContext(Dispatchers.Main) {
-            val autoEnvAttributesMode = if (config.autoEnvAttributes) {
-                AutoEnvAttributesEnabled
-            } else {
-                AutoEnvAttributesDisabled
-            }
-            val ldConfig = LDConfig(
-                mobileKey = config.mobileKey,
-                autoEnvAttributes = autoEnvAttributesMode
-            )
-
-            ldConfig.debugMode = config.debugLogging
-            ldConfig.evaluationReasons = config.evaluationReasons
-            ldConfig.sendEvents = config.sendEvents
-            config.wrapperName?.let { wrapperNameToApply ->
-                ldConfig.wrapperName = wrapperNameToApply
-                ldConfig.wrapperVersion = config.wrapperVersion
-            }
-            val ldContext = initialContext.toLDContext()
-            suspendCancellableCoroutine { continuation ->
-                LDClient.startWithConfiguration(
-                    configuration = ldConfig,
-                    context = ldContext,
-                    startWaitSeconds = config.initWaitSeconds.toDouble(),
-                    completion = {
-                        continuation.resume(Unit)
-                    },
-                )
-            }
-            (clientProvider as? DefaultLdClientProvider)?.client = LDClient.get()
+    // LDClient and LDConfig are main-thread oriented; LaunchDarkly iOS 11+ also invokes start completions on
+    // the main queue (Swift 6–friendly), so this dispatcher stays correct.
+    override suspend fun initialize(
+        initialContext: EvaluationContext?
+    ) = withContext(mainDispatcher) {
+        val autoEnvAttributesMode = if (config.autoEnvAttributes) {
+            AutoEnvAttributesEnabled
+        } else {
+            AutoEnvAttributesDisabled
         }
+        val ldConfig = LDConfig(
+            mobileKey = config.mobileKey,
+            autoEnvAttributes = autoEnvAttributesMode
+        )
+
+        ldConfig.debugMode = config.debugLogging
+        // Always enabled: OpenFeature mappings require LD evaluation reasons (kind, errorKind, etc.).
+        ldConfig.evaluationReasons = true
+        ldConfig.sendEvents = config.sendEvents
+        val ldContext = initialContext.toLDContext()
+        client = clientFactory.createClient(
+            ldConfig,
+            ldContext,
+            config.initWaitSeconds.toDouble(),
+        )
     }
 
     override fun shutdown() {
-        val ldClient = clientProvider.getClient()
-        ldClient?.close()
-        (clientProvider as? DefaultLdClientProvider)?.client = null
+        client?.close()
+        client = null
     }
 
     override suspend fun onContextSet(
         oldContext: EvaluationContext?,
         newContext: EvaluationContext,
-    ) {
-        withContext(Dispatchers.Main) {
-            val ldClient = clientProvider.getClient() ?: return@withContext
-            val ldContext = newContext.toLDContext()
-            suspendCancellableCoroutine { continuation ->
-                ldClient.identifyWithContext(ldContext) {
-                    continuation.resume(Unit)
-                }
+    ) = withContext(mainDispatcher) {
+        val ldClient = client ?: return@withContext
+        val ldContext = newContext.toLDContext()
+        suspendCancellableCoroutine { continuation ->
+            ldClient.identifyWithContext(ldContext) {
+                continuation.resume(Unit)
             }
         }
     }
@@ -85,7 +75,7 @@ internal class IosLaunchDarklyEngine(
         defaultValue: Boolean,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Boolean> {
-        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val ldClient = client ?: return ldClientNotReadyEvaluationDetail(defaultValue)
         val evaluationDetail = ldClient.boolVariationDetailForKey(key, defaultValue)
         return toLdEvaluationDetail(
             evaluationDetail.value,
@@ -99,7 +89,7 @@ internal class IosLaunchDarklyEngine(
         defaultValue: String,
         context: EvaluationContext?,
     ): LdEvaluationDetail<String> {
-        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val ldClient = client ?: return ldClientNotReadyEvaluationDetail(defaultValue)
         val evaluationDetail = ldClient.stringVariationDetailForKey(key, defaultValue)
         val resolvedString = evaluationDetail.value ?: defaultValue
         return toLdEvaluationDetail(
@@ -114,7 +104,7 @@ internal class IosLaunchDarklyEngine(
         defaultValue: Int,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Int> {
-        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val ldClient = client ?: return ldClientNotReadyEvaluationDetail(defaultValue)
         val evaluationDetail =
             ldClient.integerVariationDetailForKey(key, defaultValue.toLong())
         return toLdEvaluationDetail(
@@ -129,7 +119,7 @@ internal class IosLaunchDarklyEngine(
         defaultValue: Double,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Double> {
-        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val ldClient = client ?: return ldClientNotReadyEvaluationDetail(defaultValue)
         val evaluationDetail = ldClient.doubleVariationDetailForKey(key, defaultValue)
         return toLdEvaluationDetail(
             evaluationDetail.value,
@@ -143,7 +133,7 @@ internal class IosLaunchDarklyEngine(
         defaultValue: Value,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Value> {
-        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val ldClient = client ?: return ldClientNotReadyEvaluationDetail(defaultValue)
         val ldDefault = defaultValue.toLDValue()
         val jsonEvaluationDetail = ldClient.jsonVariationDetailForKey(key, ldDefault)
         val objectValue = jsonEvaluationDetail.value.toValue()
@@ -209,5 +199,5 @@ private fun ContextBuilderResult.unwrapContext(): LDContext {
     val builtContext = success
     if (builtContext != null) return builtContext
     val failureDescription = failure?.localizedDescription ?: "unknown"
-    error("LaunchDarkly LDContext build failed: $failureDescription")
+    throw OpenFeatureError.InvalidContextError("LaunchDarkly LDContext build failed: $failureDescription")
 }

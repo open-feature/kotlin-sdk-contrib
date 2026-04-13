@@ -9,6 +9,8 @@ import dev.mokkery.every
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.openfeature.kotlin.sdk.Value
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -19,11 +21,7 @@ class AndroidLaunchDarklyEngineTest {
 
     @Test
     fun getBooleanDetail_clientNull_returnsClientNotReady() {
-        val engine = AndroidLaunchDarklyEngine(
-            mock<Application>(),
-            config,
-            LdClientProvider { null },
-        )
+        val engine = AndroidLaunchDarklyEngine(mock<Application>(), config, Dispatchers.Unconfined)
         val detail = engine.getBooleanDetail("flag", false, null)
         assertEquals(false, detail.value)
         assertEquals(LdErrorKind.CLIENT_NOT_READY, detail.errorKind)
@@ -31,7 +29,7 @@ class AndroidLaunchDarklyEngineTest {
 
     @Test
     fun getStringDetail_clientNull_returnsClientNotReady() {
-        val engine = AndroidLaunchDarklyEngine(mock<Application>(), config, LdClientProvider { null })
+        val engine = AndroidLaunchDarklyEngine(mock<Application>(), config, Dispatchers.Unconfined)
         val detail = engine.getStringDetail("flag", "default", null)
         assertEquals("default", detail.value)
         assertEquals(LdErrorKind.CLIENT_NOT_READY, detail.errorKind)
@@ -42,7 +40,13 @@ class AndroidLaunchDarklyEngineTest {
         val mockClient = mock<LDClientInterface>()
         val sdkDetail = EvaluationDetail.fromValue(true, 0, EvaluationReason.ruleMatch(0, "r1"))
         every { mockClient.boolVariationDetail("flag", false) } returns sdkDetail
-        val engine = AndroidLaunchDarklyEngine(mock<Application>(), config, LdClientProvider { mockClient })
+        val engine = AndroidLaunchDarklyEngine(
+            mock<Application>(),
+            config,
+            Dispatchers.Unconfined,
+            LdClientFactory { _, _, _, _ -> mockClient },
+        )
+        runBlocking { engine.initialize(null) }
         val detail = engine.getBooleanDetail("flag", false, null)
         assertEquals(true, detail.value)
         assertEquals(0, detail.variationIndex)
@@ -55,7 +59,13 @@ class AndroidLaunchDarklyEngineTest {
         val mockClient = mock<LDClientInterface>()
         val sdkDetail = EvaluationDetail.fromValue(42, 1, EvaluationReason.fallthrough())
         every { mockClient.intVariationDetail("n", 0) } returns sdkDetail
-        val engine = AndroidLaunchDarklyEngine(mock<Application>(), config, LdClientProvider { mockClient })
+        val engine = AndroidLaunchDarklyEngine(
+            mock<Application>(),
+            config,
+            Dispatchers.Unconfined,
+            LdClientFactory { _, _, _, _ -> mockClient },
+        )
+        runBlocking { engine.initialize(null) }
         val detail = engine.getIntegerDetail("n", 0, null)
         assertEquals(42, detail.value)
         assertEquals(1, detail.variationIndex)
@@ -68,7 +78,13 @@ class AndroidLaunchDarklyEngineTest {
         val mockClient = mock<LDClientInterface>()
         val sdkDetail = EvaluationDetail.fromValue(2.5, 0, EvaluationReason.off())
         every { mockClient.doubleVariationDetail("d", 1.0) } returns sdkDetail
-        val engine = AndroidLaunchDarklyEngine(mock<Application>(), config, LdClientProvider { mockClient })
+        val engine = AndroidLaunchDarklyEngine(
+            mock<Application>(),
+            config,
+            Dispatchers.Unconfined,
+            LdClientFactory { _, _, _, _ -> mockClient },
+        )
+        runBlocking { engine.initialize(null) }
         val detail = engine.getDoubleDetail("d", 1.0, null)
         assertEquals(2.5, detail.value)
         assertNull(detail.errorKind)
@@ -80,7 +96,13 @@ class AndroidLaunchDarklyEngineTest {
         val ldJson = LDValue.parse("{\"a\":1}")
         val sdkDetail = EvaluationDetail.fromValue(ldJson, 0, EvaluationReason.off())
         every { mockClient.jsonValueVariationDetail("obj", any()) } returns sdkDetail
-        val engine = AndroidLaunchDarklyEngine(mock<Application>(), config, LdClientProvider { mockClient })
+        val engine = AndroidLaunchDarklyEngine(
+            mock<Application>(),
+            config,
+            Dispatchers.Unconfined,
+            LdClientFactory { _, _, _, _ -> mockClient },
+        )
+        runBlocking { engine.initialize(null) }
         val detail = engine.getObjectDetail("obj", Value.Null, null)
         assertEquals(Value.Structure(mapOf("a" to Value.Integer(1))), detail.value)
         assertEquals("OFF", detail.reasonKind)

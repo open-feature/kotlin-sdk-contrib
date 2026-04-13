@@ -6,11 +6,11 @@ import com.launchdarkly.sdk.EvaluationDetail
 import com.launchdarkly.sdk.EvaluationReason
 import com.launchdarkly.sdk.LDContext
 import com.launchdarkly.sdk.android.Components
-import com.launchdarkly.sdk.android.LDClient
+import com.launchdarkly.sdk.android.LDClientInterface
 import com.launchdarkly.sdk.android.LDConfig
 import dev.openfeature.kotlin.sdk.EvaluationContext
 import dev.openfeature.kotlin.sdk.Value
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import kotlin.time.ExperimentalTime
@@ -19,74 +19,53 @@ import kotlin.time.ExperimentalTime
 internal class AndroidLaunchDarklyEngine(
     private val application: Application,
     private val config: LaunchDarklyConfig,
-    private val clientProvider: LdClientProvider,
+    private val ioDispatcher: CoroutineDispatcher,
+    private val clientFactory: LdClientFactory = DefaultLdClientFactory,
 ) : LaunchDarklyEngine {
-    constructor(application: Application, config: LaunchDarklyConfig) : this(
-        application,
-        config,
-        DefaultLdClientProvider(),
-    )
+    private var client: LDClientInterface? = null
 
-    override suspend fun initialize(initialContext: EvaluationContext?) {
-        withContext(Dispatchers.IO) {
-            val auto = if (config.autoEnvAttributes) {
-                LDConfig.Builder.AutoEnvAttributes.Enabled
-            } else {
-                LDConfig.Builder.AutoEnvAttributes.Disabled
-            }
-            val ldConfig = LDConfig.Builder(auto)
-                .mobileKey(config.mobileKey)
-                .events(
-                    if (config.sendEvents) {
-                        Components.sendEvents()
-                    } else {
-                        Components.noEvents()
-                    },
-                )
-                .let { builder ->
-                    val name = config.wrapperName
-                    if (name != null) {
-                        builder.http(
-                            Components.httpConfiguration().wrapper(
-                                name,
-                                config.wrapperVersion.orEmpty(),
-                            ),
-                        )
-                    } else {
-                        builder
-                    }
-                }
-                .logLevel(if (config.debugLogging) LDLogLevel.DEBUG else LDLogLevel.NONE)
-                .evaluationReasons(config.evaluationReasons)
-                .build()
-            val ldContext = initialContext.toLDContext()
-            (clientProvider as? DefaultLdClientProvider)?.client = LDClient.init(
-                application,
-                ldConfig,
-                ldContext,
-                config.initWaitSeconds,
-            )
+    override suspend fun initialize(
+        initialContext: EvaluationContext?
+    ) = withContext(ioDispatcher) {
+        val auto = if (config.autoEnvAttributes) {
+            LDConfig.Builder.AutoEnvAttributes.Enabled
+        } else {
+            LDConfig.Builder.AutoEnvAttributes.Disabled
         }
+        val ldConfig = LDConfig.Builder(auto)
+            .mobileKey(config.mobileKey)
+            .events(
+                if (config.sendEvents) {
+                    Components.sendEvents()
+                } else {
+                    Components.noEvents()
+                },
+            )
+            .logLevel(if (config.debugLogging) LDLogLevel.DEBUG else LDLogLevel.NONE)
+            // Always enabled: OpenFeature mappings require LD evaluation reasons (kind, errorKind, etc.).
+            .evaluationReasons(true)
+            .build()
+        val ldContext = initialContext.toLDContext()
+        client = clientFactory.createClient(
+            application,
+            ldConfig,
+            ldContext,
+            config.initWaitSeconds,
+        )
     }
 
     override fun shutdown() {
-        val defaultProvider = clientProvider as? DefaultLdClientProvider
-        val client = defaultProvider?.client
-        if (client != null) {
-            runCatching { client.close() }
-            defaultProvider.client = null
-        }
+        runCatching { client?.close() }
+        client = null
     }
 
     override suspend fun onContextSet(
         oldContext: EvaluationContext?,
         newContext: EvaluationContext,
-    ) {
-        withContext(Dispatchers.IO) {
-            val ldClient = clientProvider.getClient() ?: return@withContext
-            val ldContext = newContext.toLDContext()
-            ldClient.identify(ldContext).get(config.contextUpdateTimeoutMs, TimeUnit.MILLISECONDS)
-        }
+    ) = withContext(ioDispatcher) {
+        val ldClient = client ?: return@withContext
+        val ldContext = newContext.toLDContext()
+        ldClient.identify(ldContext).get(config.contextUpdateTimeoutMs, TimeUnit.MILLISECONDS)
     }
 
     override fun getBooleanDetail(
@@ -94,7 +73,7 @@ internal class AndroidLaunchDarklyEngine(
         defaultValue: Boolean,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Boolean> {
-        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val ldClient = client ?: return ldClientNotReadyEvaluationDetail(defaultValue)
         return detail(ldClient.boolVariationDetail(key, defaultValue))
     }
 
@@ -103,7 +82,7 @@ internal class AndroidLaunchDarklyEngine(
         defaultValue: String,
         context: EvaluationContext?,
     ): LdEvaluationDetail<String> {
-        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val ldClient = client ?: return ldClientNotReadyEvaluationDetail(defaultValue)
         return detail(ldClient.stringVariationDetail(key, defaultValue))
     }
 
@@ -112,7 +91,7 @@ internal class AndroidLaunchDarklyEngine(
         defaultValue: Int,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Int> {
-        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val ldClient = client ?: return ldClientNotReadyEvaluationDetail(defaultValue)
         return detail(ldClient.intVariationDetail(key, defaultValue))
     }
 
@@ -121,7 +100,7 @@ internal class AndroidLaunchDarklyEngine(
         defaultValue: Double,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Double> {
-        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val ldClient = client ?: return ldClientNotReadyEvaluationDetail(defaultValue)
         return detail(ldClient.doubleVariationDetail(key, defaultValue))
     }
 
@@ -130,7 +109,7 @@ internal class AndroidLaunchDarklyEngine(
         defaultValue: Value,
         context: EvaluationContext?,
     ): LdEvaluationDetail<Value> {
-        val ldClient = clientProvider.getClient() ?: return ldClientNotReadyEvaluationDetail(defaultValue)
+        val ldClient = client ?: return ldClientNotReadyEvaluationDetail(defaultValue)
         val ldDefault = defaultValue.toLDValue()
         val evaluationDetail = ldClient.jsonValueVariationDetail(key, ldDefault)
         val value = evaluationDetail.value?.toValue() ?: Value.Null

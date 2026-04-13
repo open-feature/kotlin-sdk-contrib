@@ -1,5 +1,6 @@
 package dev.openfeature.kotlin.contrib.providers.launchdarkly
 
+import kotlinx.coroutines.Dispatchers
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -9,7 +10,7 @@ class IosLaunchDarklyEngineNotReadyTest {
     fun getBooleanDetail_clientNull_returnsClientNotReady() {
         val engine = IosLaunchDarklyEngine(
             LaunchDarklyConfig(mobileKey = "test-key"),
-            LdClientProvider { null },
+            Dispatchers.Unconfined,
         )
         val detail = engine.getBooleanDetail("flag", false, null)
         assertEquals(false, detail.value)

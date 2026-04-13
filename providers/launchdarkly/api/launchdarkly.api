@@ -1,27 +1,21 @@
 public final class dev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyConfig {
-	public fun <init> (Ljava/lang/String;IJZZZZLjava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;IJZZZZLjava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;IJZZZ)V
+	public synthetic fun <init> (Ljava/lang/String;IJZZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()I
 	public final fun component3 ()J
 	public final fun component4 ()Z
 	public final fun component5 ()Z
 	public final fun component6 ()Z
-	public final fun component7 ()Z
-	public final fun component8 ()Ljava/lang/String;
-	public final fun component9 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;IJZZZZLjava/lang/String;Ljava/lang/String;)Ldev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyConfig;
-	public static synthetic fun copy$default (Ldev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyConfig;Ljava/lang/String;IJZZZZLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ldev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyConfig;
+	public final fun copy (Ljava/lang/String;IJZZZ)Ldev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyConfig;
+	public static synthetic fun copy$default (Ldev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyConfig;Ljava/lang/String;IJZZZILjava/lang/Object;)Ldev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyConfig;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAutoEnvAttributes ()Z
 	public final fun getContextUpdateTimeoutMs ()J
 	public final fun getDebugLogging ()Z
-	public final fun getEvaluationReasons ()Z
 	public final fun getInitWaitSeconds ()I
 	public final fun getMobileKey ()Ljava/lang/String;
 	public final fun getSendEvents ()Z
-	public final fun getWrapperName ()Ljava/lang/String;
-	public final fun getWrapperVersion ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -42,6 +36,7 @@ public final class dev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchD
 }
 
 public final class dev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyKt {
-	public static final fun createLaunchDarklyFeatureProvider (Landroid/app/Application;Ldev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyConfig;)Ldev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyFeatureProvider;
+	public static final fun createLaunchDarklyFeatureProvider (Landroid/app/Application;Ldev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyConfig;Lkotlinx/coroutines/CoroutineDispatcher;)Ldev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyFeatureProvider;
+	public static synthetic fun createLaunchDarklyFeatureProvider$default (Landroid/app/Application;Ldev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyConfig;Lkotlinx/coroutines/CoroutineDispatcher;ILjava/lang/Object;)Ldev/openfeature/kotlin/contrib/providers/launchdarkly/LaunchDarklyFeatureProvider;
 }
 
