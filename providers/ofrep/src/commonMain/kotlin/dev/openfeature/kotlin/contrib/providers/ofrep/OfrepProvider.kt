@@ -55,14 +55,18 @@ class OfrepProvider(
 
     override fun observe(): Flow<OpenFeatureProviderEvents> = statusFlow
 
-    private fun providerError(error: OpenFeatureError): OpenFeatureProviderEvents.ProviderError =
-        OpenFeatureProviderEvents.ProviderError(
+    private fun providerError(error: Throwable): OpenFeatureProviderEvents.ProviderError {
+        val ofError =
+            error as? OpenFeatureError
+                ?: OpenFeatureError.GeneralError(error.message ?: "Unknown error")
+        return OpenFeatureProviderEvents.ProviderError(
             eventDetails =
                 EventDetails(
-                    message = error.message,
-                    errorCode = error.errorCode(),
+                    message = ofError.message,
+                    errorCode = ofError.errorCode(),
                 ),
         )
+    }
 
     override suspend fun initialize(initialContext: EvaluationContext?) {
         this.evaluationContext = initialContext
@@ -73,12 +77,8 @@ class OfrepProvider(
             } else {
                 statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
             }
-        } catch (e: OpenFeatureError) {
+        } catch (e: Throwable) {
             statusFlow.emit(providerError(e))
-        } catch (e: Exception) {
-            statusFlow.emit(
-                providerError(OpenFeatureError.GeneralError(e.message ?: "Unknown error")),
-            )
         }
         startPolling()
     }
@@ -119,7 +119,7 @@ class OfrepProvider(
                         // in that case the provider is just stale because we were not able to
                         statusFlow.emit(OpenFeatureProviderEvents.ProviderStale())
                     } catch (e: Throwable) {
-                        statusFlow.emit(providerError(OpenFeatureError.GeneralError(e.message ?: "")))
+                        statusFlow.emit(providerError(e))
                     }
                 }
             }
@@ -170,7 +170,7 @@ class OfrepProvider(
                 statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
             }
         } catch (e: Throwable) {
-            statusFlow.emit(providerError(OpenFeatureError.GeneralError(e.message ?: "")))
+            statusFlow.emit(providerError(e))
         }
     }
 
