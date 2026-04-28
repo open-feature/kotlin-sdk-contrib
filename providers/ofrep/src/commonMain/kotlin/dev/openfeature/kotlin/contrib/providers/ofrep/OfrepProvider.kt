@@ -15,6 +15,7 @@ import dev.openfeature.kotlin.sdk.ProviderEvaluation
 import dev.openfeature.kotlin.sdk.ProviderMetadata
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
+import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.EventDetails
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import kotlinx.coroutines.CancellationException
@@ -54,23 +55,30 @@ class OfrepProvider(
 
     override fun observe(): Flow<OpenFeatureProviderEvents> = statusFlow
 
+    private fun providerError(error: OpenFeatureError): OpenFeatureProviderEvents.ProviderError =
+        OpenFeatureProviderEvents.ProviderError(
+            eventDetails =
+                EventDetails(
+                    message = error.message,
+                    errorCode = error.errorCode(),
+                ),
+        )
+
     override suspend fun initialize(initialContext: EvaluationContext?) {
         this.evaluationContext = initialContext
         try {
             val bulkEvaluationStatus = evaluateFlags(initialContext ?: ImmutableContext())
             if (bulkEvaluationStatus == BulkEvaluationStatus.RATE_LIMITED) {
-                statusFlow.emit(
-                    OpenFeatureProviderEvents.ProviderError(
-                        OpenFeatureError.GeneralError("Rate limited"),
-                    ),
-                )
+                statusFlow.emit(providerError(OpenFeatureError.GeneralError("Rate limited")))
             } else {
-                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady)
+                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
             }
         } catch (e: OpenFeatureError) {
-            statusFlow.emit(OpenFeatureProviderEvents.ProviderError(e))
+            statusFlow.emit(providerError(e))
         } catch (e: Exception) {
-            statusFlow.emit(OpenFeatureProviderEvents.ProviderError(OpenFeatureError.GeneralError(e.message ?: "Unknown error")))
+            statusFlow.emit(
+                providerError(OpenFeatureError.GeneralError(e.message ?: "Unknown error")),
+            )
         }
         startPolling()
     }
@@ -101,7 +109,7 @@ class OfrepProvider(
                             BulkEvaluationStatus.SUCCESS_UPDATED -> {
                                 // TODO: we should migrate to configuration change event when it's available
                                 // in the kotlin SDK
-                                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady)
+                                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
                             }
                         }
                     } catch (e: CancellationException) {
@@ -109,15 +117,9 @@ class OfrepProvider(
                         // statusFlow
                     } catch (e: OfrepError.ApiTooManyRequestsError) {
                         // in that case the provider is just stale because we were not able to
-                        statusFlow.emit(OpenFeatureProviderEvents.ProviderStale)
+                        statusFlow.emit(OpenFeatureProviderEvents.ProviderStale())
                     } catch (e: Throwable) {
-                        statusFlow.emit(
-                            OpenFeatureProviderEvents.ProviderError(
-                                OpenFeatureError.GeneralError(
-                                    e.message ?: "",
-                                ),
-                            ),
-                        )
+                        statusFlow.emit(providerError(OpenFeatureError.GeneralError(e.message ?: "")))
                     }
                 }
             }
@@ -157,7 +159,7 @@ class OfrepProvider(
         oldContext: EvaluationContext?,
         newContext: EvaluationContext,
     ) {
-        this.statusFlow.emit(OpenFeatureProviderEvents.ProviderStale)
+        this.statusFlow.emit(OpenFeatureProviderEvents.ProviderStale())
         this.evaluationContext = newContext
 
         try {
@@ -165,10 +167,10 @@ class OfrepProvider(
             // we don't emit event if the evaluation is rate limited because
             // the provider is still stale
             if (postBulkEvaluateFlags != BulkEvaluationStatus.RATE_LIMITED) {
-                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady)
+                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
             }
         } catch (e: Throwable) {
-            statusFlow.emit(OpenFeatureProviderEvents.ProviderError(OpenFeatureError.GeneralError(e.message ?: "")))
+            statusFlow.emit(providerError(OpenFeatureError.GeneralError(e.message ?: "")))
         }
     }
 

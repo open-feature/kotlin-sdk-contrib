@@ -18,8 +18,8 @@ import dev.openfeature.kotlin.sdk.ImmutableContext
 import dev.openfeature.kotlin.sdk.OpenFeatureAPI
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
+import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.EventDetails
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
-import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -36,7 +36,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
@@ -154,7 +153,7 @@ class OfrepProviderTest {
 
             val provider = createOfrepProvider(mockEngine)
             var providerErrorReceived = false
-            var exceptionReceived: Throwable? = null
+            var details: EventDetails? = null
 
             launch {
                 provider
@@ -163,19 +162,15 @@ class OfrepProviderTest {
                     .take(1)
                     .collect {
                         providerErrorReceived = true
-                        exceptionReceived = it.error
+                        details = it.eventDetails
                     }
             }
             runCurrent()
             withClient(provider, defaultEvalCtx) { client ->
                 runCurrent()
                 assertTrue(providerErrorReceived, "ProviderError event was not received")
-                assertIs<OpenFeatureError.GeneralError>(exceptionReceived, "The exception is not of type GeneralError")
-                assertEquals(
-                    "Rate limited",
-                    (exceptionReceived as OpenFeatureError.GeneralError).message,
-                    "The exception's message is not correct",
-                )
+                assertEquals(ErrorCode.GENERAL, details?.errorCode)
+                assertEquals("Rate limited", details?.message)
             }
         }
 
@@ -187,7 +182,7 @@ class OfrepProviderTest {
 
             val provider = createOfrepProvider(mockEngine)
             var providerErrorReceived = false
-            var exceptionReceived: Throwable? = null
+            var details: EventDetails? = null
 
             launch {
                 provider
@@ -196,7 +191,7 @@ class OfrepProviderTest {
                     .take(1)
                     .collect {
                         providerErrorReceived = true
-                        exceptionReceived = it.error
+                        details = it.eventDetails
                     }
             }
             runCurrent()
@@ -204,10 +199,7 @@ class OfrepProviderTest {
             withClient(provider, evalCtx) { client ->
                 runCurrent()
                 assertTrue(providerErrorReceived, "ProviderError event was not received")
-                assertIs<OpenFeatureError.TargetingKeyMissingError>(
-                    exceptionReceived,
-                    "The exception is not of type TargetingKeyMissingError",
-                )
+                assertEquals(ErrorCode.TARGETING_KEY_MISSING, details?.errorCode)
             }
         }
 
@@ -219,7 +211,7 @@ class OfrepProviderTest {
 
             val provider = createOfrepProvider(mockEngine)
             var providerErrorReceived = false
-            var exceptionReceived: Throwable? = null
+            var details: EventDetails? = null
 
             launch {
                 provider
@@ -228,7 +220,7 @@ class OfrepProviderTest {
                     .take(1)
                     .collect {
                         providerErrorReceived = true
-                        exceptionReceived = it.error
+                        details = it.eventDetails
                     }
             }
             runCurrent()
@@ -236,10 +228,7 @@ class OfrepProviderTest {
             withClient(provider, evalCtx) { client ->
                 runCurrent()
                 assertTrue(providerErrorReceived, "ProviderError event was not received")
-                assertIs<OpenFeatureError.TargetingKeyMissingError>(
-                    exceptionReceived,
-                    "The exception is not of type TargetingKeyMissingError",
-                )
+                assertEquals(ErrorCode.TARGETING_KEY_MISSING, details?.errorCode)
             }
         }
 
@@ -253,7 +242,7 @@ class OfrepProviderTest {
                 )
             val provider = createOfrepProvider(mockEngine)
             var providerErrorReceived = false
-            var exceptionReceived: Throwable? = null
+            var details: EventDetails? = null
 
             launch {
                 provider
@@ -262,14 +251,14 @@ class OfrepProviderTest {
                     .take(1)
                     .collect {
                         providerErrorReceived = true
-                        exceptionReceived = it.error
+                        details = it.eventDetails
                     }
             }
             runCurrent()
             withClient(provider, defaultEvalCtx) { client ->
                 runCurrent()
                 assertTrue(providerErrorReceived, "ProviderError event was not received")
-                assertIs<OpenFeatureError.InvalidContextError>(exceptionReceived, "The exception is not of type InvalidContextError")
+                assertEquals(ErrorCode.INVALID_CONTEXT, details?.errorCode)
             }
         }
 
@@ -284,7 +273,7 @@ class OfrepProviderTest {
 
             val provider = createOfrepProvider(mockEngine)
             var providerErrorReceived = false
-            var exceptionReceived: Throwable? = null
+            var details: EventDetails? = null
 
             launch {
                 provider
@@ -293,14 +282,14 @@ class OfrepProviderTest {
                     .take(1)
                     .collect {
                         providerErrorReceived = true
-                        exceptionReceived = it.error
+                        details = it.eventDetails
                     }
             }
             runCurrent()
             withClient(provider, defaultEvalCtx) { client ->
                 runCurrent()
                 assertTrue(providerErrorReceived, "ProviderError event was not received")
-                assertIs<OpenFeatureError.ParseError>(exceptionReceived, "The exception is not of type ParseError")
+                assertEquals(ErrorCode.PARSE_ERROR, details?.errorCode)
             }
         }
 
