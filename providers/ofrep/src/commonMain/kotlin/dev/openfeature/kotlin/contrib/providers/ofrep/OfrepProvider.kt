@@ -8,11 +8,13 @@ import dev.openfeature.kotlin.contrib.providers.ofrep.controller.OfrepApi
 import dev.openfeature.kotlin.contrib.providers.ofrep.enum.BulkEvaluationStatus
 import dev.openfeature.kotlin.contrib.providers.ofrep.error.OfrepError
 import dev.openfeature.kotlin.sdk.EvaluationContext
-import dev.openfeature.kotlin.sdk.FeatureProvider
 import dev.openfeature.kotlin.sdk.Hook
 import dev.openfeature.kotlin.sdk.ImmutableContext
+import dev.openfeature.kotlin.sdk.OpenFeatureStatus
 import dev.openfeature.kotlin.sdk.ProviderEvaluation
 import dev.openfeature.kotlin.sdk.ProviderMetadata
+import dev.openfeature.kotlin.sdk.ProviderStatusTracker
+import dev.openfeature.kotlin.sdk.StateManagingProvider
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.EventDetails
@@ -23,7 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.concurrent.Volatile
@@ -35,13 +37,17 @@ import kotlin.time.Instant
 @OptIn(ExperimentalTime::class)
 class OfrepProvider(
     private val ofrepOptions: OfrepOptions,
-) : FeatureProvider {
+) : StateManagingProvider {
     private val ofrepApi = OfrepApi(ofrepOptions)
     override val hooks: List<Hook<*>>
         get() = listOf()
 
     override val metadata: ProviderMetadata
         get() = OfrepProviderMetadata()
+
+    private val statusTracker = ProviderStatusTracker()
+
+    override val status: StateFlow<OpenFeatureStatus> = statusTracker.status
 
     private var evaluationContext: EvaluationContext? = null
 
@@ -51,9 +57,7 @@ class OfrepProvider(
     private val pollingScope: CoroutineScope = CoroutineScope(ofrepOptions.pollingDispatcher)
     private var pollingJob: Job? = null
 
-    private val statusFlow = MutableSharedFlow<OpenFeatureProviderEvents>(replay = 1)
-
-    override fun observe(): Flow<OpenFeatureProviderEvents> = statusFlow
+    override fun observe(): Flow<OpenFeatureProviderEvents> = statusTracker.observe()
 
     private fun providerError(error: Throwable): OpenFeatureProviderEvents.ProviderError {
         val ofError =
@@ -73,12 +77,12 @@ class OfrepProvider(
         try {
             val bulkEvaluationStatus = evaluateFlags(initialContext ?: ImmutableContext())
             if (bulkEvaluationStatus == BulkEvaluationStatus.RATE_LIMITED) {
-                statusFlow.emit(providerError(OpenFeatureError.GeneralError("Rate limited")))
+                statusTracker.send(providerError(OpenFeatureError.GeneralError("Rate limited")))
             } else {
-                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
+                statusTracker.send(OpenFeatureProviderEvents.ProviderReady())
             }
         } catch (e: Throwable) {
-            statusFlow.emit(providerError(e))
+            statusTracker.send(providerError(e))
         }
         startPolling()
     }
@@ -109,17 +113,17 @@ class OfrepProvider(
                             BulkEvaluationStatus.SUCCESS_UPDATED -> {
                                 // TODO: we should migrate to configuration change event when it's available
                                 // in the kotlin SDK
-                                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
+                                statusTracker.send(OpenFeatureProviderEvents.ProviderReady())
                             }
                         }
                     } catch (e: CancellationException) {
                         // expected to happen when the job is cancelled, no need to report it via the
-                        // statusFlow
+                        // status tracker
                     } catch (e: OfrepError.ApiTooManyRequestsError) {
                         // in that case the provider is just stale because we were not able to
-                        statusFlow.emit(OpenFeatureProviderEvents.ProviderStale())
+                        statusTracker.send(OpenFeatureProviderEvents.ProviderStale())
                     } catch (e: Throwable) {
-                        statusFlow.emit(providerError(e))
+                        statusTracker.send(providerError(e))
                     }
                 }
             }
@@ -143,6 +147,12 @@ class OfrepProvider(
         context: EvaluationContext?,
     ): ProviderEvaluation<Int> = genericEvaluation(key, defaultValue)
 
+    override fun getLongEvaluation(
+        key: String,
+        defaultValue: Long,
+        context: EvaluationContext?,
+    ): ProviderEvaluation<Long> = genericEvaluation(key, defaultValue)
+
     override fun getObjectEvaluation(
         key: String,
         defaultValue: Value,
@@ -159,7 +169,7 @@ class OfrepProvider(
         oldContext: EvaluationContext?,
         newContext: EvaluationContext,
     ) {
-        this.statusFlow.emit(OpenFeatureProviderEvents.ProviderStale())
+        statusTracker.send(OpenFeatureProviderEvents.ProviderStale())
         this.evaluationContext = newContext
 
         try {
@@ -167,15 +177,23 @@ class OfrepProvider(
             // we don't emit event if the evaluation is rate limited because
             // the provider is still stale
             if (postBulkEvaluateFlags != BulkEvaluationStatus.RATE_LIMITED) {
-                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
+                statusTracker.send(OpenFeatureProviderEvents.ProviderReady())
             }
         } catch (e: Throwable) {
-            statusFlow.emit(providerError(e))
+            statusTracker.send(providerError(e))
         }
     }
 
     override fun shutdown() {
         pollingJob?.cancel()
+        statusTracker.send(
+            OpenFeatureProviderEvents.ProviderError(
+                EventDetails(
+                    message = "OFREP provider shut down; not ready for evaluation",
+                    errorCode = ErrorCode.PROVIDER_NOT_READY,
+                ),
+            ),
+        )
     }
 
     private inline fun <reified T> genericEvaluation(

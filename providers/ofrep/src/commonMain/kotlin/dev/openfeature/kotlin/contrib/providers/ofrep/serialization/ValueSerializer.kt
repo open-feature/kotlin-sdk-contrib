@@ -67,6 +67,17 @@ internal object ValueSerializer : KSerializer<Value> {
         override fun deserialize(decoder: Decoder): Value.Integer = Value.Integer(decoder.decodeInt())
     }
 
+    private object LongValueSerializer : KSerializer<Value.Long> {
+        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.kotlin.sdk.Value.Long")
+
+        override fun serialize(
+            encoder: Encoder,
+            value: Value.Long,
+        ) = encoder.encodeLong(value.long)
+
+        override fun deserialize(decoder: Decoder): Value.Long = Value.Long(decoder.decodeLong())
+    }
+
     @OptIn(ExperimentalTime::class)
     private object InstantValueSerializer : KSerializer<Value.Instant> {
         override val descriptor: SerialDescriptor = buildClassSerialDescriptor("dev.openfeature.kotlin.sdk.Value.Instant")
@@ -139,6 +150,7 @@ internal object ValueSerializer : KSerializer<Value> {
             is Value.Boolean -> encoder.encodeSerializableValue(BooleanValueSerializer, value)
             is Value.Double -> encoder.encodeSerializableValue(DoubleValueSerializer, value)
             is Value.Integer -> encoder.encodeSerializableValue(IntValueSerializer, value)
+            is Value.Long -> encoder.encodeSerializableValue(LongValueSerializer, value)
             is Value.Instant -> encoder.encodeSerializableValue(InstantValueSerializer, value)
             is Value.List -> encoder.encodeSerializableValue(ListValueSerializer, value)
             is Value.String -> encoder.encodeSerializableValue(StringValueSerializer, value)
@@ -160,19 +172,11 @@ internal object ValueSerializer : KSerializer<Value> {
                     // Order matters here: check for Int before Double to avoid loss of precision
                     // if a number is a whole number but represented as a double (e.g., 5.0)
                     element.longOrNull != null -> {
-                        // If it fits in Int, use IntValueSerializer, otherwise could be an issue
-                        // or you might need a Value.Long type. For now, assume it fits Int if it's an int.
-                        // This part might need refinement based on how you handle large integers.
-                        // If Value.Integer only holds Int, then a long might be an error or fallback to Double.
-                        // Let's assume for now that if it has no decimal, it could be an Int or a long that
-                        // should be treated as Int if it fits, or Double if it's too large for Int but fits Double.
                         val longVal = element.long
                         if (longVal >= Int.MIN_VALUE && longVal <= Int.MAX_VALUE) {
                             IntValueSerializer
                         } else {
-                            // Fallback to Double if it's a long that doesn't fit Int
-                            // or if your Value.Double can represent whole numbers.
-                            DoubleValueSerializer
+                            LongValueSerializer
                         }
                     }
                     element.doubleOrNull != null -> DoubleValueSerializer

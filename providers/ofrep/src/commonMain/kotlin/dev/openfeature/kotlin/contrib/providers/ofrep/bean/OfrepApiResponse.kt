@@ -42,6 +42,8 @@ inline fun <reified T> Value.toPrimitive(): T {
             Boolean::class -> asBoolean() as T?
             String::class -> asString() as T?
             Int::class -> asInteger() as T?
+            Long::class ->
+                (asLong() ?: asInteger()?.toLong()) as T?
             Double::class ->
                 // doubles might have been serialized as integers
                 (asDouble() ?: asInteger()?.toDouble()) as T?
