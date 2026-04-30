@@ -88,7 +88,7 @@ class OfrepProvider(
             throw e
         } catch (e: OpenFeatureError) {
             statusFlow.emit(e.toProviderEvent())
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             statusFlow.emit(e.toGenericProviderEvent())
         }
         startPolling()
@@ -186,7 +186,7 @@ class OfrepProvider(
             throw e
         } catch (e: OpenFeatureError) {
             statusFlow.emit(e.toProviderEvent())
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             statusFlow.emit(e.toGenericProviderEvent())
         }
     }
