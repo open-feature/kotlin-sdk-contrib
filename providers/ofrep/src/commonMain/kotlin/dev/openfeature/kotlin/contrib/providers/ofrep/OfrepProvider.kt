@@ -55,30 +55,41 @@ class OfrepProvider(
 
     override fun observe(): Flow<OpenFeatureProviderEvents> = statusFlow
 
-    private fun providerError(error: Throwable): OpenFeatureProviderEvents.ProviderError {
-        val ofError =
-            error as? OpenFeatureError
-                ?: OpenFeatureError.GeneralError(error.message ?: "Unknown error")
-        return OpenFeatureProviderEvents.ProviderError(
+    private fun OpenFeatureError.toProviderEvent(): OpenFeatureProviderEvents.ProviderError =
+        OpenFeatureProviderEvents.ProviderError(
             eventDetails =
                 EventDetails(
-                    message = ofError.message,
-                    errorCode = ofError.errorCode(),
+                    message = this.message,
+                    errorCode = this.errorCode(),
                 ),
         )
-    }
+
+    private fun Throwable.toGenericProviderEvent(): OpenFeatureProviderEvents.ProviderError =
+        OpenFeatureProviderEvents.ProviderError(
+            eventDetails =
+                EventDetails(
+                    message = this.message,
+                    errorCode = ErrorCode.GENERAL,
+                ),
+        )
 
     override suspend fun initialize(initialContext: EvaluationContext?) {
         this.evaluationContext = initialContext
         try {
             val bulkEvaluationStatus = evaluateFlags(initialContext ?: ImmutableContext())
             if (bulkEvaluationStatus == BulkEvaluationStatus.RATE_LIMITED) {
-                statusFlow.emit(providerError(OpenFeatureError.GeneralError("Rate limited")))
+                statusFlow.emit(OpenFeatureError.GeneralError("Rate limited").toProviderEvent())
             } else {
                 statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
             }
+        } catch (e: CancellationException) {
+            statusFlow.emit(e.toGenericProviderEvent())
+            // If the coroutine was canceled, let's propagate the CancellationException
+            throw e
+        } catch (e: OpenFeatureError) {
+            statusFlow.emit(e.toProviderEvent())
         } catch (e: Throwable) {
-            statusFlow.emit(providerError(e))
+            statusFlow.emit(e.toGenericProviderEvent())
         }
         startPolling()
     }
@@ -113,13 +124,13 @@ class OfrepProvider(
                             }
                         }
                     } catch (e: CancellationException) {
-                        // expected to happen when the job is cancelled, no need to report it via the
-                        // statusFlow
+                        // expected to happen when the provider is shut down, no need to emit an error event. The while
+                        // loop will terminate gracefully.
                     } catch (e: OfrepError.ApiTooManyRequestsError) {
                         // in that case the provider is just stale because we were not able to
                         statusFlow.emit(OpenFeatureProviderEvents.ProviderStale())
                     } catch (e: Throwable) {
-                        statusFlow.emit(providerError(e))
+                        statusFlow.emit(e.toGenericProviderEvent())
                     }
                 }
             }
@@ -169,8 +180,14 @@ class OfrepProvider(
             if (postBulkEvaluateFlags != BulkEvaluationStatus.RATE_LIMITED) {
                 statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
             }
+        } catch (e: CancellationException) {
+            // If the coroutine was canceled, let's propagate the CancellationException
+            statusFlow.emit(e.toGenericProviderEvent())
+            throw e
+        } catch (e: OpenFeatureError) {
+            statusFlow.emit(e.toProviderEvent())
         } catch (e: Throwable) {
-            statusFlow.emit(providerError(e))
+            statusFlow.emit(e.toGenericProviderEvent())
         }
     }
 
