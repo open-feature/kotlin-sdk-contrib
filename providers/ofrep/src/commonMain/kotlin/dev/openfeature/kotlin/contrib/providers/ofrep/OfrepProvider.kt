@@ -64,7 +64,7 @@ class OfrepProvider(
                 ),
         )
 
-    private fun Throwable.toGenericProviderEvent(): OpenFeatureProviderEvents.ProviderError =
+    private fun Throwable.toGeneralProviderEvent(): OpenFeatureProviderEvents.ProviderError =
         OpenFeatureProviderEvents.ProviderError(
             eventDetails =
                 EventDetails(
@@ -83,13 +83,13 @@ class OfrepProvider(
                 statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
             }
         } catch (e: CancellationException) {
-            statusFlow.emit(e.toGenericProviderEvent())
+            statusFlow.emit(e.toGeneralProviderEvent())
             // If the coroutine was canceled, let's propagate the CancellationException
             throw e
         } catch (e: OpenFeatureError) {
             statusFlow.emit(e.toProviderEvent())
         } catch (e: Exception) {
-            statusFlow.emit(e.toGenericProviderEvent())
+            statusFlow.emit(e.toGeneralProviderEvent())
         }
         startPolling()
     }
@@ -130,7 +130,7 @@ class OfrepProvider(
                         // in that case the provider is just stale because we were not able to
                         statusFlow.emit(OpenFeatureProviderEvents.ProviderStale())
                     } catch (e: Throwable) {
-                        statusFlow.emit(e.toGenericProviderEvent())
+                        statusFlow.emit(e.toGeneralProviderEvent())
                     }
                 }
             }
@@ -182,12 +182,12 @@ class OfrepProvider(
             }
         } catch (e: CancellationException) {
             // If the coroutine was canceled, let's propagate the CancellationException
-            statusFlow.emit(e.toGenericProviderEvent())
+            statusFlow.emit(e.toGeneralProviderEvent())
             throw e
         } catch (e: OpenFeatureError) {
             statusFlow.emit(e.toProviderEvent())
         } catch (e: Exception) {
-            statusFlow.emit(e.toGenericProviderEvent())
+            statusFlow.emit(e.toGeneralProviderEvent())
         }
     }
 
