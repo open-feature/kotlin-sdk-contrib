@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.2.10"
 kotlinx-coroutines = "1.10.2"
-open-feature-kotlin-sdk = "0.6.2"
+open-feature-kotlin-sdk = "0.8.0"
 android = "8.10.1"
 ktor = "3.1.3"
 

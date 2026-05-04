@@ -15,6 +15,7 @@ import dev.openfeature.kotlin.sdk.ProviderEvaluation
 import dev.openfeature.kotlin.sdk.ProviderMetadata
 import dev.openfeature.kotlin.sdk.Value
 import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents
+import dev.openfeature.kotlin.sdk.events.OpenFeatureProviderEvents.EventDetails
 import dev.openfeature.kotlin.sdk.exceptions.ErrorCode
 import dev.openfeature.kotlin.sdk.exceptions.OpenFeatureError
 import kotlinx.coroutines.CancellationException
@@ -54,23 +55,41 @@ class OfrepProvider(
 
     override fun observe(): Flow<OpenFeatureProviderEvents> = statusFlow
 
+    private fun OpenFeatureError.toProviderEvent(): OpenFeatureProviderEvents.ProviderError =
+        OpenFeatureProviderEvents.ProviderError(
+            eventDetails =
+                EventDetails(
+                    message = this.message,
+                    errorCode = this.errorCode(),
+                ),
+        )
+
+    private fun Throwable.toGeneralProviderEvent(): OpenFeatureProviderEvents.ProviderError =
+        OpenFeatureProviderEvents.ProviderError(
+            eventDetails =
+                EventDetails(
+                    message = this.message,
+                    errorCode = ErrorCode.GENERAL,
+                ),
+        )
+
     override suspend fun initialize(initialContext: EvaluationContext?) {
         this.evaluationContext = initialContext
         try {
             val bulkEvaluationStatus = evaluateFlags(initialContext ?: ImmutableContext())
             if (bulkEvaluationStatus == BulkEvaluationStatus.RATE_LIMITED) {
-                statusFlow.emit(
-                    OpenFeatureProviderEvents.ProviderError(
-                        OpenFeatureError.GeneralError("Rate limited"),
-                    ),
-                )
+                statusFlow.emit(OpenFeatureError.GeneralError("Rate limited").toProviderEvent())
             } else {
-                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady)
+                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
             }
+        } catch (e: CancellationException) {
+            statusFlow.emit(e.toGeneralProviderEvent())
+            // If the coroutine was canceled, let's propagate the CancellationException
+            throw e
         } catch (e: OpenFeatureError) {
-            statusFlow.emit(OpenFeatureProviderEvents.ProviderError(e))
+            statusFlow.emit(e.toProviderEvent())
         } catch (e: Exception) {
-            statusFlow.emit(OpenFeatureProviderEvents.ProviderError(OpenFeatureError.GeneralError(e.message ?: "Unknown error")))
+            statusFlow.emit(e.toGeneralProviderEvent())
         }
         startPolling()
     }
@@ -101,23 +120,17 @@ class OfrepProvider(
                             BulkEvaluationStatus.SUCCESS_UPDATED -> {
                                 // TODO: we should migrate to configuration change event when it's available
                                 // in the kotlin SDK
-                                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady)
+                                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
                             }
                         }
                     } catch (e: CancellationException) {
-                        // expected to happen when the job is cancelled, no need to report it via the
-                        // statusFlow
+                        // expected to happen when the provider is shut down, no need to emit an error event. The while
+                        // loop will terminate gracefully.
                     } catch (e: OfrepError.ApiTooManyRequestsError) {
                         // in that case the provider is just stale because we were not able to
-                        statusFlow.emit(OpenFeatureProviderEvents.ProviderStale)
+                        statusFlow.emit(OpenFeatureProviderEvents.ProviderStale())
                     } catch (e: Throwable) {
-                        statusFlow.emit(
-                            OpenFeatureProviderEvents.ProviderError(
-                                OpenFeatureError.GeneralError(
-                                    e.message ?: "",
-                                ),
-                            ),
-                        )
+                        statusFlow.emit(e.toGeneralProviderEvent())
                     }
                 }
             }
@@ -157,7 +170,7 @@ class OfrepProvider(
         oldContext: EvaluationContext?,
         newContext: EvaluationContext,
     ) {
-        this.statusFlow.emit(OpenFeatureProviderEvents.ProviderStale)
+        this.statusFlow.emit(OpenFeatureProviderEvents.ProviderStale())
         this.evaluationContext = newContext
 
         try {
@@ -165,10 +178,16 @@ class OfrepProvider(
             // we don't emit event if the evaluation is rate limited because
             // the provider is still stale
             if (postBulkEvaluateFlags != BulkEvaluationStatus.RATE_LIMITED) {
-                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady)
+                statusFlow.emit(OpenFeatureProviderEvents.ProviderReady())
             }
-        } catch (e: Throwable) {
-            statusFlow.emit(OpenFeatureProviderEvents.ProviderError(OpenFeatureError.GeneralError(e.message ?: "")))
+        } catch (e: CancellationException) {
+            // If the coroutine was canceled, let's propagate the CancellationException
+            statusFlow.emit(e.toGeneralProviderEvent())
+            throw e
+        } catch (e: OpenFeatureError) {
+            statusFlow.emit(e.toProviderEvent())
+        } catch (e: Exception) {
+            statusFlow.emit(e.toGeneralProviderEvent())
         }
     }
 
