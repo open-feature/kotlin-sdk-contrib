@@ -17,6 +17,8 @@ The Environment Variables provider allows you to read feature flags from the [pr
 
 ## Installation
 
+<!-- x-release-please-start-version -->
+
 ```xml
 <dependency>
     <groupId>dev.openfeature.kotlin.contrib.providers</groupId>
@@ -24,6 +26,8 @@ The Environment Variables provider allows you to read feature flags from the [pr
     <version>0.1.0</version>
 </dependency>
 ```
+
+<!-- x-release-please-end-version -->
 
 ## Usage
 
