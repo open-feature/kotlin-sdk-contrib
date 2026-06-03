@@ -18,3 +18,6 @@ dependencyResolutionManagement {
 
 include(":providers:env-var")
 include(":providers:ofrep")
+
+include(":hooks:logging-slf4j")
+include(":hooks:logging-timber")
